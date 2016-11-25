@@ -2,15 +2,10 @@ package clustertransport
 
 import "time"
 
-// SnifferMethod si
-type SnifferMethod interface {
-	CarryOut() []string
-}
-
 // NewSniffer is
-func NewSniffer(method SnifferMethod) *Sniffer {
+func NewSniffer(cluster ClusterBase) *Sniffer {
 	s := &Sniffer{
-		method:  method,
+		cluster:  cluster,
 		receive: make(chan *container),
 		exit:    make(chan struct{}),
 		lost:    make(chan struct{}),
@@ -22,7 +17,7 @@ func NewSniffer(method SnifferMethod) *Sniffer {
 
 // Sniffer is
 type Sniffer struct {
-	method  SnifferMethod
+	cluster  ClusterBase
 	receive chan *container
 	exit    chan struct{}
 	lost    chan struct{}
@@ -46,7 +41,7 @@ func (s *Sniffer) Exit() {
 }
 
 func (s *Sniffer) sniffering() {
-	s.sniffed = s.method.CarryOut()
+	s.sniffed = s.cluster.Sniff()
 }
 
 func (s *Sniffer) run() {
