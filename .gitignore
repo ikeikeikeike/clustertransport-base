@@ -22,3 +22,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+cluster_elasticache.go
+cluster_elasticsearch.go
