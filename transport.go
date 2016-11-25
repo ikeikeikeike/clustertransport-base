@@ -6,9 +6,11 @@ import (
 )
 
 // NewTransport is
-func NewTransport(cluster ClusterBase, uris ...string) *Transport {
+func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
-		cluster: cluster,
+		cfg:     cfg,
+		cluster: cfg.Cluster,
+		sniffer: newSniffer(cfg),
 		uris:    uris,
 		request: make(chan *container),
 		rebuild: make(chan *baggage),
@@ -28,7 +30,9 @@ func NewTransport(cluster ClusterBase, uris ...string) *Transport {
 
 // Transport struct is
 type Transport struct {
+	cfg     *Config
 	cluster ClusterBase
+	sniffer *Sniffer
 	uris    []string
 	conns   *Conns
 	request chan *container
@@ -46,7 +50,7 @@ func (t *Transport) buildConns() *Conns {
 	var conns []*Conn
 	for _, uri := range t.uris {
 		conn := t.cluster.Conn(uri, t)
-		conn.uri = uri
+		conn.Uri = uri
 
 		conns = append(conns, conn)
 	}
@@ -72,7 +76,7 @@ func (t *Transport) conn() *Conn {
 }
 
 func (t *Transport) reloadConns() {
-	uris := t.cluster.Sniff()
+	uris, _ := t.sniffer.Sniffed()
 	t.rebuildConns(uris)
 }
 

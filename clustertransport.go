@@ -10,3 +10,8 @@ type ClusterBase interface {
 type SelectorBase interface {
 	Select() *Conn
 }
+
+// Config should be Context
+type Config struct {
+	Cluster ClusterBase
+}

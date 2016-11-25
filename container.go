@@ -8,7 +8,7 @@ type container struct {
 }
 
 var defcontainer = &container{
-	baggage: make(chan *baggage, 30000),
+	baggage: make(chan *baggage),
 }
 
 func (c *container) reset() {
@@ -32,7 +32,7 @@ func (cp *containerPool) Put(c *container) {
 
 var containers = &containerPool{
 	Pool: sync.Pool{New: func() interface{} {
-		return &container{baggage: make(chan *baggage, 30000)}
+		return &container{baggage: make(chan *baggage)}
 	}},
 }
 

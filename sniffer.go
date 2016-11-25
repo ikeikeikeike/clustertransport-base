@@ -2,10 +2,9 @@ package clustertransport
 
 import "time"
 
-// NewSniffer is
-func NewSniffer(cluster ClusterBase) *Sniffer {
+func newSniffer(cfg *Config) *Sniffer {
 	s := &Sniffer{
-		cluster:  cluster,
+		cluster: cfg.Cluster,
 		receive: make(chan *container),
 		exit:    make(chan struct{}),
 		lost:    make(chan struct{}),
@@ -17,7 +16,8 @@ func NewSniffer(cluster ClusterBase) *Sniffer {
 
 // Sniffer is
 type Sniffer struct {
-	cluster  ClusterBase
+	cfg     *Config
+	cluster ClusterBase
 	receive chan *container
 	exit    chan struct{}
 	lost    chan struct{}
@@ -40,7 +40,7 @@ func (s *Sniffer) Exit() {
 	s.exit <- struct{}{}
 }
 
-func (s *Sniffer) sniffering() {
+func (s *Sniffer) sniff() {
 	s.sniffed = s.cluster.Sniff()
 }
 
@@ -54,7 +54,7 @@ func (s *Sniffer) run() {
 			b := baggages.Get(s.sniffed, nil)
 			container.baggage <- b
 		case <-snifferTick.C:
-			s.sniffering()
+			s.sniff()
 		case <-s.lost:
 			s.sniffed = make([]string, 0)
 		case <-s.exit:

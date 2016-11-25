@@ -12,7 +12,7 @@ type ElasticsearchCluster struct{}
 
 // Sniff is
 func (m *ElasticsearchCluster) Sniff() []string {
-	return []string{"1", "2"}
+	return []string{"http://127.0.0.1:9200",}
 }
 
 // Conn is
@@ -23,5 +23,5 @@ func (m *ElasticsearchCluster) Conn(uri string, st *Transport) *Conn {
 	options = append(options, elastic.SetSniff(false))
 
 	client, _ := elastic.NewClient(options...)
-	return &Conn{client: client}
+	return &Conn{Client: client}
 }

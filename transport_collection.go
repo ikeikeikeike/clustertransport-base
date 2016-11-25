@@ -14,7 +14,7 @@ type Conns struct {
 func (cs *Conns) uris() []string {
 	uris := []string{}
 	for _, c := range cs.cc {
-		uris = append(uris, c.uri)
+		uris = append(uris, c.Uri)
 	}
 
 	return uris

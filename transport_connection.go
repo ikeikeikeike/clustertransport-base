@@ -14,8 +14,8 @@ func NewConn() *Conn {
 
 // Conn struct is
 type Conn struct {
-	client    interface{}
-	uri       string
+	Client    interface{}
+	Uri       string
 	rebirth   int64 // Timeout Seconds
 	failures  int64 // Counter
 	dead      bool
