@@ -77,7 +77,7 @@ func (t *Transport) conn() *Conn {
 
 func (t *Transport) reloadConns() {
 	uris, _ := t.sniffer.Sniffed()
-	t.rebuildConns(uris)
+	t.rebuildConns(uris)  // TODO: fix this block point
 }
 
 func (t *Transport) resurrectDeads() {
@@ -87,8 +87,6 @@ func (t *Transport) resurrectDeads() {
 }
 
 func (t *Transport) rebuildConns(uris []string) {
-	c := containers.Get()
-	defer containers.Put(c)
 	b := baggages.Get(uris, nil)
 	defer baggages.Put(b)
 
