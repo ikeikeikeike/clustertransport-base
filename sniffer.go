@@ -51,7 +51,7 @@ func (s *Sniffer) sniff() {
 }
 
 func (s *Sniffer) run() {
-	tick := time.NewTicker(30 * time.Second)
+	tick := time.NewTicker(20 * time.Second)
 	defer tick.Stop()
 
 	for {

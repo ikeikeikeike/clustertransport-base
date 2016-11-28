@@ -6,24 +6,22 @@ import (
 	"os"
 	"syscall"
 	"time"
-
-	"github.com/k0kubun/pp"
 )
 
 // NewTransport is
 func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
-		cfg:             cfg,
-		cluster:         cfg.Cluster,
-		uris:            uris,
-		request:         make(chan *container),
-		exit:            make(chan struct{}),
-		lastRequestAt:   time.Now(),
-		reload:          true,
-		reloadAfter:     20000,
-		retryOnFailure:  true,
-		resurrectAfter:  60,
-		maxRetries:      3,
+		cfg:            cfg,
+		cluster:        cfg.Cluster,
+		uris:           uris,
+		request:        make(chan *container),
+		exit:           make(chan struct{}),
+		lastRequestAt:  time.Now(),
+		reload:         true,
+		reloadAfter:    20000,
+		retryOnFailure: true,
+		resurrectAfter: 60,
+		maxRetries:     3,
 	}
 
 	t.conns = t.buildConns()
@@ -43,13 +41,13 @@ type Transport struct {
 	request chan *container
 	exit    chan struct{}
 
-	lastRequestAt   time.Time
-	resurrectAfter  int64
-	retryOnFailure  bool
-	reloadAfter     int
-	reload          bool
-	maxRetries      int
-	counter         int
+	lastRequestAt  time.Time
+	resurrectAfter int64
+	retryOnFailure bool
+	reloadAfter    int
+	reload         bool
+	maxRetries     int
+	counter        int
 }
 
 // Req is
@@ -68,22 +66,22 @@ func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{},
 }
 
 func (t *Transport) run() {
-	// For debug
-	tick := time.NewTicker(5 * time.Second)
-	defer tick.Stop()
-	tick2 := time.NewTicker(30 * time.Second)
-	defer tick2.Stop()
+	// // For debug
+	// tick := time.NewTicker(5 * time.Second)
+	// defer tick.Stop()
+	// tick2 := time.NewTicker(30 * time.Second)
+	// defer tick2.Stop()
 
 	for {
 		select {
 		case c := <-t.request:
 			b := baggages.Get(t.req(c, 0))
 			c.baggage <- b
-		// For debug
-		case <-tick.C:
-			pp.Println("alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
-		case <-tick2.C:
-			pp.Println(t.conns.all())
+		// // For debug
+		// case <-tick.C:
+		// pp.Println("alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
+		// case <-tick2.C:
+		// pp.Println(t.conns.all())
 		case <-t.exit:
 			break
 		}
