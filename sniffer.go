@@ -45,15 +45,18 @@ func (s *Sniffer) sniff() {
 }
 
 func (s *Sniffer) run() {
-	snifferTick := time.NewTicker(60 * time.Second)
-	defer snifferTick.Stop()
+	sniffTick := time.NewTicker(60 * time.Second)
+	defer sniffTick.Stop()
 
 	for {
 		select {
-		case container := <-s.receive:
+		case c := <-s.receive:
+			if len(s.sniffed) <= 0 {
+				s.sniff()
+			}
 			b := baggages.Get(s.sniffed, nil)
-			container.baggage <- b
-		case <-snifferTick.C:
+			c.baggage <- b
+		case <-sniffTick.C:
 			s.sniff()
 		case <-s.lost:
 			s.sniffed = make([]string, 0)

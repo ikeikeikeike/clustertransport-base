@@ -12,8 +12,7 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 		cluster: cfg.Cluster,
 		sniffer: newSniffer(cfg),
 		uris:    uris,
-		request: make(chan *container),
-		rebuild: make(chan *baggage),
+		request: make(chan *container, 200000),
 		exit:    make(chan struct{}),
 
 		lastRequestAt:  time.Now(),
@@ -36,7 +35,6 @@ type Transport struct {
 	uris    []string
 	conns   *Conns
 	request chan *container
-	rebuild chan *baggage
 	exit    chan struct{}
 
 	lastRequestAt  time.Time
@@ -44,6 +42,41 @@ type Transport struct {
 	reloadAfter    int64
 	reload         bool
 	counter        int64
+}
+
+// Req is
+func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{}, error) {
+	c := containers.Get()
+	defer containers.Put(c)
+
+	c.fun = fun
+	t.request <- c
+
+	b := <-c.baggage
+	defer baggages.Put(b)
+
+	item, err := b.item, b.err
+	return item, err
+}
+
+func (t *Transport) run() {
+	for {
+		select {
+		case c := <-t.request:
+			b := baggages.Get(t.doRequest(c))
+			c.baggage <- b
+		case <-t.exit:
+			break
+		}
+	}
+}
+
+func (t *Transport) doRequest(c *container) (interface{}, error) {
+	conn := t.conn()
+
+	item, err := c.fun(conn)
+
+	return item, err
 }
 
 func (t *Transport) buildConns() *Conns {
@@ -77,7 +110,7 @@ func (t *Transport) conn() *Conn {
 
 func (t *Transport) reloadConns() {
 	uris, _ := t.sniffer.Sniffed()
-	t.rebuildConns(uris)  // TODO: fix this block point
+	t.rebuildConns(uris)
 }
 
 func (t *Transport) resurrectDeads() {
@@ -87,51 +120,7 @@ func (t *Transport) resurrectDeads() {
 }
 
 func (t *Transport) rebuildConns(uris []string) {
-	b := baggages.Get(uris, nil)
-	defer baggages.Put(b)
-
-	t.rebuild <- b
-}
-
-// PerformRequest is
-func (t *Transport) PerformRequest(fun func(conn *Conn) (interface{}, error)) (interface{}, error) {
-	c := containers.Get()
-	defer containers.Put(c)
-
-	c.fun = fun
-	t.request <- c
-
-	b := <-c.baggage
-	defer baggages.Put(b)
-
-	item, err := b.item, b.err
-	return item, err
-}
-
-func (t *Transport) run() {
-	for {
-		select {
-		case container := <-t.request:
-			b := baggages.Get(t.doRequest(container))
-			container.baggage <- b
-		case baggage := <-t.rebuild:
-			t.doRebuild(baggage)
-		case <-t.exit:
-			break
-		}
-	}
-}
-
-func (t *Transport) doRequest(c *container) (interface{}, error) {
-	conn := t.conn()
-
-	item, err := c.fun(conn)
-
-	return item, err
-}
-
-func (t *Transport) doRebuild(b *baggage) {
-	t.uris = b.item.([]string)
+	t.uris = uris
 
 	// TODO
 	// t.cluster.CloseConns()
