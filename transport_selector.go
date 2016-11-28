@@ -5,27 +5,28 @@ import (
 	"time"
 )
 
-type RandomSelector struct {
-	conns []*Conn
-}
+// RandomSelector is
+type RandomSelector struct{}
 
-func (rs *RandomSelector) Select() *Conn {
+// Select is
+func (rs *RandomSelector) Select(conns []*Conn) *Conn {
 	rand.Seed(time.Now().Unix())
-	return rs.conns[rand.Intn(len(rs.conns))]
+	return conns[rand.Intn(len(conns))]
 }
 
+// RoundRobinSelector is
 type RoundRobinSelector struct {
-	conns   []*Conn
 	current int
 }
 
-func (rr *RoundRobinSelector) Select() *Conn {
-	conn := rr.conns[rr.current]
-
-	rr.current++
-	if rr.current >= len(rr.conns) {
+// Select is
+func (rr *RoundRobinSelector) Select(conns []*Conn) *Conn {
+	if rr.current >= len(conns) {
 		rr.current = 0
 	}
+
+	conn := conns[rr.current]
+	rr.current++
 
 	return conn
 }

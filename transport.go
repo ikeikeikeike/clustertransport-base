@@ -2,7 +2,8 @@ package clustertransport
 
 import (
 	"net"
-	"reflect"
+	"net/url"
+	"os"
 	"syscall"
 	"time"
 
@@ -19,8 +20,8 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 		exit:            make(chan struct{}),
 		lastRequestAt:   time.Now(),
 		reload:          true,
-		reloadAfter:     10000,
-		reloadOnFailure: false,
+		reloadAfter:     20000,
+		retryOnFailure:  true,
 		resurrectAfter:  60,
 		maxRetries:      3,
 	}
@@ -44,7 +45,7 @@ type Transport struct {
 
 	lastRequestAt   time.Time
 	resurrectAfter  int64
-	reloadOnFailure bool
+	retryOnFailure  bool
 	reloadAfter     int
 	reload          bool
 	maxRetries      int
@@ -67,11 +68,22 @@ func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{},
 }
 
 func (t *Transport) run() {
+	// For debug
+	tick := time.NewTicker(5 * time.Second)
+	defer tick.Stop()
+	tick2 := time.NewTicker(30 * time.Second)
+	defer tick2.Stop()
+
 	for {
 		select {
 		case c := <-t.request:
 			b := baggages.Get(t.req(c, 0))
 			c.baggage <- b
+		// For debug
+		case <-tick.C:
+			pp.Println("alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
+		case <-tick2.C:
+			pp.Println(t.conns.all())
 		case <-t.exit:
 			break
 		}
@@ -97,8 +109,15 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 
 			return item, err
 
-		case *net.OpError, *Econnrefused:
-			if oerr, ok := err.(*net.OpError); ok && oerr.Err != syscall.ECONNREFUSED {
+		case *url.Error, *net.OpError, *os.SyscallError, *Econnrefused:
+			syserr := err
+			if uerr, ok := syserr.(*url.Error); ok {
+				syserr = uerr.Err
+			}
+			if oerr, ok := syserr.(*net.OpError); ok {
+				syserr = oerr.Err
+			}
+			if serr, ok := syserr.(*os.SyscallError); ok && serr.Err != syscall.ECONNREFUSED {
 				if tries <= t.maxRetries {
 					item, err = t.req(c, tries)
 				}
@@ -108,15 +127,8 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 
 			conn.terminate()
 
-			if t.reloadOnFailure {
-				if tries < len(t.conns.all()) {
-					t.reloadConns()
-					return t.req(c, tries)
-				}
-
-				if tries <= t.maxRetries {
-					return t.req(c, tries)
-				}
+			if t.retryOnFailure && tries <= t.maxRetries {
+				item, err = t.req(c, tries)
 			}
 
 			return item, err
@@ -127,6 +139,7 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 		conn.healthy()
 	}
 
+	t.lastRequestAt = time.Now()
 	return item, err
 }
 
@@ -140,7 +153,7 @@ func (t *Transport) buildConns() *Conns {
 	}
 
 	// TODO: able to choose selector
-	selector := &RoundRobinSelector{conns: conns}
+	selector := &RoundRobinSelector{}
 
 	return &Conns{cc: conns, selector: selector}
 }
@@ -176,37 +189,6 @@ func (t *Transport) rebuildConns(uris []string) {
 	// TODO
 	// t.cluster.CloseConns()
 
-	var staleConns []*Conn
-	conns := t.buildConns()
-	oldConns := t.conns.all()
-
-	for _, old := range oldConns {
-		for _, new := range conns.cc {
-			if reflect.DeepEqual(old, new) {
-				staleConns = append(staleConns, old)
-			}
-		}
-	}
-
-	var newConns []*Conn
-	for _, new := range conns.cc {
-		keep := true
-		for _, old := range oldConns {
-			if reflect.DeepEqual(new, old) {
-				keep = false
-			}
-		}
-
-		if keep {
-			newConns = append(newConns, new)
-		}
-	}
-
-	conns.remove(staleConns...)
-	conns.add(newConns...)
-
-	t.conns = conns
+	t.conns = t.buildConns()
 	t.sniffer = newSniffer(t.cfg, t.conns)
-
-	pp.Println(t.conns)
 }

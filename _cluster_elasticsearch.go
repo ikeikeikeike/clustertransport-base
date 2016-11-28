@@ -26,7 +26,9 @@ func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
 	if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
 		if len(info.Nodes) > 0 {
 			for _, node := range info.Nodes {
-				uris = append(uris, fmt.Sprintf("http://%s", node.HTTPAddress))
+				if node.HTTPAddress != "" {
+					uris = append(uris, fmt.Sprintf("http://%s", node.HTTPAddress))
+				}
 			}
 		}
 	}

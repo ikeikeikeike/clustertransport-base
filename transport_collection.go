@@ -2,7 +2,6 @@ package clustertransport
 
 import (
 	"errors"
-	"reflect"
 	"sort"
 )
 
@@ -55,38 +54,14 @@ func (cs *Conns) conn() (*Conn, error) {
 	if len(cs.alives()) <= 0 {
 		deads := cs.deads()
 		if len(deads) > 0 {
-			return nil, errors.New("There's no connection already.")
+			return nil, errors.New("There's no connection already")
 		}
 
 		sort.Sort(sort.Reverse(connsSort(deads)))
 		deads[0].alive()
 	}
 
-	return cs.selector.Select(), nil
-}
-
-func (cs *Conns) add(conns ...*Conn) {
-	cs.cc = append(cs.cc, conns...)
-}
-
-func (cs *Conns) remove(conns ...*Conn) {
-	var still []*Conn
-
-	for _, top := range cs.cc {
-		keep := true
-
-		for _, bottom := range conns {
-			if reflect.DeepEqual(top, bottom) {
-				keep = false
-			}
-		}
-
-		if keep {
-			still = append(still, top)
-		}
-	}
-
-	cs.cc = still
+	return cs.selector.Select(cs.alives()), nil
 }
 
 type connsSort []*Conn

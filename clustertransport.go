@@ -8,7 +8,7 @@ type ClusterBase interface {
 
 // SelectorBase is
 type SelectorBase interface {
-	Select() *Conn
+	Select(conns []*Conn) *Conn
 }
 
 // Config should be Context
