@@ -1,27 +1,32 @@
 package clustertransport
 
 import (
+	"net"
 	"reflect"
+	"syscall"
 	"time"
+
+	"github.com/k0kubun/pp"
 )
 
 // NewTransport is
 func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
-		cfg:     cfg,
-		cluster: cfg.Cluster,
-		sniffer: newSniffer(cfg),
-		uris:    uris,
-		request: make(chan *container, 200000),
-		exit:    make(chan struct{}),
-
-		lastRequestAt:  time.Now(),
-		reload:         true,
-		reloadAfter:    10000,
-		resurrectAfter: 60,
+		cfg:             cfg,
+		cluster:         cfg.Cluster,
+		uris:            uris,
+		request:         make(chan *container),
+		exit:            make(chan struct{}),
+		lastRequestAt:   time.Now(),
+		reload:          true,
+		reloadAfter:     10000,
+		reloadOnFailure: false,
+		resurrectAfter:  60,
+		maxRetries:      3,
 	}
 
 	t.conns = t.buildConns()
+	t.sniffer = newSniffer(cfg, t.conns)
 
 	go t.run()
 	return t
@@ -37,11 +42,13 @@ type Transport struct {
 	request chan *container
 	exit    chan struct{}
 
-	lastRequestAt  time.Time
-	resurrectAfter int64
-	reloadAfter    int64
-	reload         bool
-	counter        int64
+	lastRequestAt   time.Time
+	resurrectAfter  int64
+	reloadOnFailure bool
+	reloadAfter     int
+	reload          bool
+	maxRetries      int
+	counter         int
 }
 
 // Req is
@@ -63,7 +70,7 @@ func (t *Transport) run() {
 	for {
 		select {
 		case c := <-t.request:
-			b := baggages.Get(t.doRequest(c))
+			b := baggages.Get(t.req(c, 0))
 			c.baggage <- b
 		case <-t.exit:
 			break
@@ -71,10 +78,54 @@ func (t *Transport) run() {
 	}
 }
 
-func (t *Transport) doRequest(c *container) (interface{}, error) {
-	conn := t.conn()
+func (t *Transport) req(c *container, tries int) (interface{}, error) {
+	conn, err := t.conn()
+	if err != nil {
+		return nil, err
+	}
+
+	tries++
 
 	item, err := c.fun(conn)
+
+	if err != nil {
+		switch err.(type) {
+		default:
+			if tries <= t.maxRetries {
+				item, err = t.req(c, tries)
+			}
+
+			return item, err
+
+		case *net.OpError, *Econnrefused:
+			if oerr, ok := err.(*net.OpError); ok && oerr.Err != syscall.ECONNREFUSED {
+				if tries <= t.maxRetries {
+					item, err = t.req(c, tries)
+				}
+
+				return item, err
+			}
+
+			conn.terminate()
+
+			if t.reloadOnFailure {
+				if tries < len(t.conns.all()) {
+					t.reloadConns()
+					return t.req(c, tries)
+				}
+
+				if tries <= t.maxRetries {
+					return t.req(c, tries)
+				}
+			}
+
+			return item, err
+		}
+	}
+
+	if conn.failures > 0 {
+		conn.healthy()
+	}
 
 	return item, err
 }
@@ -94,7 +145,7 @@ func (t *Transport) buildConns() *Conns {
 	return &Conns{cc: conns, selector: selector}
 }
 
-func (t *Transport) conn() *Conn {
+func (t *Transport) conn() (*Conn, error) {
 	if time.Now().Unix() > t.lastRequestAt.Unix()+t.resurrectAfter {
 		t.resurrectDeads()
 	}
@@ -155,4 +206,7 @@ func (t *Transport) rebuildConns(uris []string) {
 	conns.add(newConns...)
 
 	t.conns = conns
+	t.sniffer = newSniffer(t.cfg, t.conns)
+
+	pp.Println(t.conns)
 }

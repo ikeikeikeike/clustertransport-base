@@ -1,6 +1,8 @@
 package clustertransport
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,8 +13,25 @@ import (
 type ElasticsearchCluster struct{}
 
 // Sniff is
-func (m *ElasticsearchCluster) Sniff() []string {
-	return []string{"http://127.0.0.1:9200",}
+func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
+	resp, err := http.Get(conn.Uri + "/_nodes/http")
+	if err != nil {
+		return []string{}
+	}
+	defer resp.Body.Close()
+
+	var uris []string
+	var info *elastic.NodesInfoResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
+		if len(info.Nodes) > 0 {
+			for _, node := range info.Nodes {
+				uris = append(uris, fmt.Sprintf("http://%s", node.HTTPAddress))
+			}
+		}
+	}
+
+	return uris
 }
 
 // Conn is
