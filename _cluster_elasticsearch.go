@@ -9,10 +9,10 @@ import (
 	elastic "gopkg.in/olivere/elastic.v3"
 )
 
-// ElasticsearchCluster is
+// ElasticsearchCluster implements for ClusterBase interface.
 type ElasticsearchCluster struct{}
 
-// Sniff is
+// Sniff method returns node connection strings.
 func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
 	resp, err := http.Get(conn.Uri + "/_nodes/http")
 	if err != nil {
@@ -36,7 +36,7 @@ func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
 	return uris
 }
 
-// Conn is
+// Conn method returns one of cluster system connection.
 func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 	var options []elastic.ClientOptionFunc
 	options = append(options, elastic.SetHttpClient(&http.Client{Timeout: 5 * time.Second}))
