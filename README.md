@@ -1,22 +1,24 @@
 
 # Cluster Transport
-### Message passing based client on cluster systems.
+### Message passing based client(transport) on cluster systems.
 
 It handles connecting to multiple nodes in the cluster which there's management interface.
 
 Features overview:
 
-<!-- - Pluggable logging and tracing -->
-- Plugabble connection selection strategies (round-robin, random, custom)
-- Pluggable transport implementation, customizable and extendable
-- Request retries and dead connections handling
-- Node reloading (based on cluster state) on errors or on demand
+- [Pluggable transport implementation, customizable and extendable](#pluggable-transport-implementation-customizable-and-extendable)
+- [Plugabble connection selection strategies (round-robin, random, custom)](#plugabble-connection-selection-strategies-round-robin-random-custom)
+- [Pluggable logging and tracing](#pluggable-logging-and-tracing)
+- [Request retries and dead connections handling](#request-retries-and-dead-connections-handling)
+- [Node discovering (based on cluster state) on errors or on demand](#node-discovering-based-on-cluster-state-on-errors-or-on-demand)
 
 ## Installation
 
 ```bash
 $ go get github.com/ikeikeikeike/clustertransport-base
 ```
+
+## Pluggable transport implementation, customizable and extendable
 
 Needs to implement `Sniff` and `Conn` methods which connects Cluster System.
 A example that's connecting Elasticsearch instead of elastic client's sniffer.
@@ -77,6 +79,7 @@ func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 
 ## Configuration
 
+...Later
 
 ## Usage
 
@@ -118,3 +121,32 @@ Output:
     TagLine:     "You Know, for Search",
 } nil
 ```
+
+## Request retries and dead connections handling
+
+Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError` error which wraps `syscall.ECONNREFUSED`. Commonly those are wrapped from `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` in explicitly.
+
+```go
+item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {
+    client := conn.Client.(*any.Client)
+
+    res, err := client.Get("users")
+    if err != nil {
+        return res, &ct.Econnrefused{"node econnrefused"}
+    }
+
+    return res, err
+})
+```
+
+## Plugabble connection selection strategies (round-robin, random, custom)
+
+...Later
+
+## Node discovering (based on cluster state) on errors or on demand
+
+...Later
+
+## Pluggable logging and tracing
+
+...Later

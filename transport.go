@@ -45,9 +45,9 @@ type Transport struct {
 	retryOnFailure bool
 	discover       bool
 	discoverTick   int
-	discoverAfter  int
+	discoverAfter  int64
 	maxRetries     int
-	counter        int
+	counter        int64
 }
 
 // Req is
@@ -195,6 +195,7 @@ func (t *Transport) rebuildConns(uris []string) {
 	// t.cluster.CloseConns()
 
 	if conns := t.buildConns(uris); len(conns.alives()) > 0 {
+		t.counter = 0
 		t.conns = conns
 		t.sniffer = newSniffer(t.cfg, t.conns)
 	}
