@@ -17,11 +17,11 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 		exit:           make(chan struct{}),
 		lastRequestAt:  time.Now(),
 		discover:       true,
-		discoverTick:   1800,    // sec
-		discoverAfter:  1000000, // sec
-		resurrectAfter: 10,      // kicking after disconnect all of connection.
+		discoverTick:   1800,   // Discovers nodes per 1800 sec.
+		discoverAfter:  300000, // Discovers nodes after passed 300,000 times.
 		retryOnFailure: true,
-		maxRetries:     3,
+		resurrectAfter: 5, // Kicking after disconnected that all of http connection
+		maxRetries:     5, // Tries to retry's number for http request
 	}
 
 	t.sniffer = newSniffer(cfg, t.buildConns(uris))
