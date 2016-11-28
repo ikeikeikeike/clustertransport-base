@@ -13,19 +13,19 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
 		cfg:            cfg,
 		cluster:        cfg.Cluster,
-		uris:           uris,
 		request:        make(chan *container),
 		exit:           make(chan struct{}),
 		lastRequestAt:  time.Now(),
-		reload:         true,
-		reloadAfter:    20000,
+		discover:       true,
+		discoverTick:   1800,    // sec
+		discoverAfter:  1000000, // sec
+		resurrectAfter: 10,      // kicking after disconnect all of connection.
 		retryOnFailure: true,
-		resurrectAfter: 60,
 		maxRetries:     3,
 	}
 
-	t.conns = t.buildConns()
-	t.sniffer = newSniffer(cfg, t.conns)
+	t.sniffer = newSniffer(cfg, t.buildConns(uris))
+	t.reloadConns()
 
 	go t.run()
 	return t
@@ -35,17 +35,17 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 type Transport struct {
 	cfg     *Config
 	cluster ClusterBase
-	sniffer *Sniffer
-	uris    []string
 	conns   *Conns
+	sniffer *Sniffer
 	request chan *container
 	exit    chan struct{}
 
 	lastRequestAt  time.Time
 	resurrectAfter int64
 	retryOnFailure bool
-	reloadAfter    int
-	reload         bool
+	discover       bool
+	discoverTick   int
+	discoverAfter  int
 	maxRetries     int
 	counter        int
 }
@@ -66,22 +66,28 @@ func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{},
 }
 
 func (t *Transport) run() {
-	// // For debug
-	// tick := time.NewTicker(5 * time.Second)
-	// defer tick.Stop()
-	// tick2 := time.NewTicker(30 * time.Second)
-	// defer tick2.Stop()
+	tick := time.NewTicker(time.Duration(t.discoverTick) * time.Second)
+	defer tick.Stop()
+	// For debug
+	// dtick := time.NewTicker(1 * time.Second)
+	// defer dtick.Stop()
+	// dtick2 := time.NewTicker(30 * time.Second)
+	// defer dtick2.Stop()
 
 	for {
 		select {
 		case c := <-t.request:
 			b := baggages.Get(t.req(c, 0))
 			c.baggage <- b
-		// // For debug
-		// case <-tick.C:
-		// pp.Println("alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
-		// case <-tick2.C:
-		// pp.Println(t.conns.all())
+		case <-tick.C:
+			if t.discover {
+				t.reloadConns()
+			}
+		// For debug
+		// case <-dtick.C:
+		// pretty.Println("counter:", t.counter, "alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
+		// case <-dtick2.C:
+		// pretty.Println(t.conns.all())
 		case <-t.exit:
 			break
 		}
@@ -123,7 +129,9 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 				return item, err
 			}
 
-			conn.terminate()
+			if len(t.conns.alives()) > 1 {
+				conn.terminate()
+			}
 
 			if t.retryOnFailure && tries <= t.maxRetries {
 				item, err = t.req(c, tries)
@@ -141,13 +149,13 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 	return item, err
 }
 
-func (t *Transport) buildConns() *Conns {
+func (t *Transport) buildConns(uris []string) *Conns {
 	var conns []*Conn
-	for _, uri := range t.uris {
-		conn := t.cluster.Conn(uri, t)
-		conn.Uri = uri
-
-		conns = append(conns, conn)
+	for _, uri := range uris {
+		if conn, err := t.cluster.Conn(uri, t); err == nil {
+			conn.Uri = uri
+			conns = append(conns, conn)
+		}
 	}
 
 	// TODO: able to choose selector
@@ -163,7 +171,7 @@ func (t *Transport) conn() (*Conn, error) {
 
 	t.counter++
 
-	if t.reload && t.counter%t.reloadAfter == 0 {
+	if t.discover && t.counter%t.discoverAfter == 0 {
 		t.reloadConns()
 	}
 
@@ -182,11 +190,12 @@ func (t *Transport) resurrectDeads() {
 }
 
 func (t *Transport) rebuildConns(uris []string) {
-	t.uris = uris
 
 	// TODO
 	// t.cluster.CloseConns()
 
-	t.conns = t.buildConns()
-	t.sniffer = newSniffer(t.cfg, t.conns)
+	if conns := t.buildConns(uris); len(conns.alives()) > 0 {
+		t.conns = conns
+		t.sniffer = newSniffer(t.cfg, t.conns)
+	}
 }

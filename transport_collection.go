@@ -53,7 +53,7 @@ func (cs *Conns) all() []*Conn {
 func (cs *Conns) conn() (*Conn, error) {
 	if len(cs.alives()) <= 0 {
 		deads := cs.deads()
-		if len(deads) > 0 {
+		if len(deads) <= 0 {
 			return nil, errors.New("There's no connection already")
 		}
 

@@ -37,12 +37,12 @@ func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
 }
 
 // Conn is
-func (m *ElasticsearchCluster) Conn(uri string, st *Transport) *Conn {
+func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 	var options []elastic.ClientOptionFunc
 	options = append(options, elastic.SetHttpClient(&http.Client{Timeout: 5 * time.Second}))
 	options = append(options, elastic.SetURL(uri))
 	options = append(options, elastic.SetSniff(false))
 
-	client, _ := elastic.NewClient(options...)
-	return &Conn{Client: client}
+	client, err := elastic.NewClient(options...)
+	return &Conn{Client: client}, err
 }
