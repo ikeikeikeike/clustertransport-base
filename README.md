@@ -79,7 +79,29 @@ func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 
 ## Configuration
 
-...Later
+```go
+cfg := ct.NewConfig()
+cfg.Cluster = &ct.ElasticsearchCluster{}
+cfg.Logger = log.Printf
+...
+```
+
+#### Default configuration
+
+```go
+func NewConfig() *Config {
+	return &Config{
+		Selector:       &RoundRobinSelector{},
+		Logger:         PrintNothing,
+		Discover:       true,
+		DiscoverTick:   1800,   // Discovers nodes per 1800 sec
+		DiscoverAfter:  300000, // Discovers nodes after passed 300,000 times
+		RetryOnFailure: false,  // Retrying asap when one of connection failed
+		ResurrectAfter: 5,      // Kicking recovers after disconnected that all of http connection
+		MaxRetries:     5,      // Tries to retry's number for http request
+	}
+}
+```
 
 ## Usage
 
@@ -96,7 +118,10 @@ import (
 var ts *ct.Transport
 
 func init() {
-	cfg := &ct.Config{Cluster: &ElasticsearchCluster{}}
+    cfg := ct.NewConfig()
+    cfg.Cluster = &ct.ElasticsearchCluster{}
+    cfg.Logger = log.Printf
+
 	ts = ct.NewTransport(cfg, "http://127.0.0.1:9200")
 }
 
@@ -149,4 +174,16 @@ item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {
 
 ## Pluggable logging and tracing
 
-...Later
+```go
+cfg := ct.NewConfig()
+cfg.Logger = log.Printf
+ts := ct.NewTransport(cfg, "http://127.0.0.1:9200")
+```
+
+```go
+ts := ct.NewTransport(ct.NewConfig(), "http://127.0.0.1:9200")
+ts.Configure(func(cfg *ct.Config) *ct.Config {
+    cfg.Logger = log.Printf
+    return cfg
+})
+```
