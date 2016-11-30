@@ -16,29 +16,29 @@ func NewConn() *Conn {
 type Conn struct {
 	Client    interface{}
 	Uri       string
+	Failures  int64 // Counter
+	Dead      bool
 	rebirth   int64 // Timeout Seconds
-	failures  int64 // Counter
-	dead      bool
 	deadSince time.Time
 }
 
 func (c *Conn) terminate() {
-	c.dead = true
-	c.failures++
+	c.Dead = true
+	c.Failures++
 	c.deadSince = time.Now()
 }
 
 func (c *Conn) isDead() bool {
-	return c.dead
+	return c.Dead
 }
 
 func (c *Conn) alive() {
-	c.dead = false
+	c.Dead = false
 }
 
 func (c *Conn) healthy() {
-	c.dead = false
-	c.failures = 0
+	c.Dead = false
+	c.Failures = 0
 }
 
 func (c *Conn) resurrect() {
@@ -49,6 +49,6 @@ func (c *Conn) resurrect() {
 
 func (c *Conn) isResurrectable() bool {
 	left := c.deadSince.Unix()
-	right := c.rebirth * int64(math.Pow(float64(2), float64(c.failures-1)))
+	right := c.rebirth * int64(math.Pow(float64(2), float64(c.Failures-1)))
 	return time.Now().Unix() > (left + right)
 }

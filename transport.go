@@ -11,17 +11,11 @@ import (
 // NewTransport is
 func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
-		cfg:            cfg,
-		cluster:        cfg.Cluster,
-		request:        make(chan *container),
-		exit:           make(chan struct{}),
-		lastRequestAt:  time.Now(),
-		discover:       true,
-		discoverTick:   1800,   // Discovers nodes per 1800 sec.
-		discoverAfter:  300000, // Discovers nodes after passed 300,000 times.
-		retryOnFailure: true,
-		resurrectAfter: 5, // Kicking after disconnected that all of http connection
-		maxRetries:     5, // Tries to retry's number for http request
+		cfg:           cfg,
+		request:       make(chan *container),
+		configure:     make(chan struct{ fun func(*Config) *Config }),
+		exit:          make(chan struct{}),
+		lastRequestAt: time.Now(),
 	}
 
 	t.sniffer = newSniffer(cfg, t.buildConns(uris))
@@ -33,21 +27,14 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 
 // Transport struct is
 type Transport struct {
-	cfg     *Config
-	cluster ClusterBase
-	conns   *Conns
-	sniffer *Sniffer
-	request chan *container
-	exit    chan struct{}
-
-	lastRequestAt  time.Time
-	resurrectAfter int64
-	retryOnFailure bool
-	discover       bool
-	discoverTick   int
-	discoverAfter  int64
-	maxRetries     int
-	counter        int64
+	cfg           *Config
+	conns         *Conns
+	sniffer       *Sniffer
+	request       chan *container
+	configure     chan struct{ fun func(*Config) *Config }
+	exit          chan struct{}
+	counter       int64
+	lastRequestAt time.Time
 }
 
 // Req is
@@ -65,28 +52,42 @@ func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{},
 	return item, err
 }
 
+// Configure is
+func (t *Transport) Configure(fun func(cfg *Config) *Config) {
+	t.configure <- struct{ fun func(*Config) *Config }{fun: fun}
+}
+
 func (t *Transport) run() {
-	tick := time.NewTicker(time.Duration(t.discoverTick) * time.Second)
+	tick := time.NewTicker(time.Duration(t.cfg.DiscoverTick) * time.Second)
 	defer tick.Stop()
+
 	// For debug
-	// dtick := time.NewTicker(1 * time.Second)
-	// defer dtick.Stop()
-	// dtick2 := time.NewTicker(30 * time.Second)
-	// defer dtick2.Stop()
+	// debugTick := time.NewTicker(1 * time.Second)
+	// defer debugTick.Stop()
+	// debugTraceTick := time.NewTicker(30 * time.Second)
+	// defer debugTraceTick.Stop()
 
 	for {
 		select {
 		case c := <-t.request:
 			b := baggages.Get(t.req(c, 0))
 			c.baggage <- b
+		case c := <-t.configure:
+			t.cfg = c.fun(t.cfg)
 		case <-tick.C:
-			if t.discover {
+			if t.cfg.Discover {
+				t.cfg.Logger("Discover clusters by `discoverTick`: "+
+					"next time after %d secs", t.cfg.DiscoverTick)
 				t.reloadConns()
 			}
 		// For debug
-		// case <-dtick.C:
-		// pretty.Println("counter:", t.counter, "alives:", len(t.conns.alives()), " deads:", len(t.conns.deads()))
-		// case <-dtick2.C:
+		// case <-debugTick.C:
+		// pretty.Println(
+		// "counter:", t.counter,
+		// "alives:", len(t.conns.alives()),
+		// "deads:", len(t.conns.deads()),
+		// )
+		// case <-debugTraceTick.C:
 		// pretty.Println(t.conns.all())
 		case <-t.exit:
 			break
@@ -107,7 +108,8 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 	if err != nil {
 		switch err.(type) {
 		default:
-			if tries <= t.maxRetries {
+			if tries <= t.cfg.MaxRetries {
+				t.cfg.Logger("Request retries %d/%d", tries, t.cfg.MaxRetries)
 				item, err = t.req(c, tries)
 			}
 
@@ -122,7 +124,8 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 				syserr = oerr.Err
 			}
 			if serr, ok := syserr.(*os.SyscallError); ok && serr.Err != syscall.ECONNREFUSED {
-				if tries <= t.maxRetries {
+				if tries <= t.cfg.MaxRetries {
+					t.cfg.Logger("Request retries %d/%d", tries, t.cfg.MaxRetries)
 					item, err = t.req(c, tries)
 				}
 
@@ -130,10 +133,12 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 			}
 
 			if len(t.conns.alives()) > 1 {
+				t.cfg.Logger("Close connection to cluster via %s", conn.Uri)
 				conn.terminate()
 			}
 
-			if t.retryOnFailure && tries <= t.maxRetries {
+			if t.cfg.RetryOnFailure && tries <= t.cfg.MaxRetries {
+				t.cfg.Logger("Do retryOnFailure %d/%d", tries, t.cfg.MaxRetries)
 				item, err = t.req(c, tries)
 			}
 
@@ -141,7 +146,7 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 		}
 	}
 
-	if conn.failures > 0 {
+	if conn.Failures > 0 {
 		conn.healthy()
 	}
 
@@ -151,27 +156,34 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 
 func (t *Transport) buildConns(uris []string) *Conns {
 	var conns []*Conn
+
 	for _, uri := range uris {
-		if conn, err := t.cluster.Conn(uri, t); err == nil {
-			conn.Uri = uri
-			conns = append(conns, conn)
+		conn, err := t.cfg.Cluster.Conn(uri, t)
+
+		if err != nil {
+			t.cfg.Logger("Failed to connection establishment via %s: %s",
+				uri, err.Error())
+			continue
 		}
+
+		conn.Uri = uri
+		conns = append(conns, conn)
 	}
 
-	// TODO: able to choose selector
-	selector := &RoundRobinSelector{}
-
-	return &Conns{cc: conns, selector: selector}
+	return &Conns{cc: conns, selector: t.cfg.Selector}
 }
 
 func (t *Transport) conn() (*Conn, error) {
-	if time.Now().Unix() > t.lastRequestAt.Unix()+t.resurrectAfter {
+	if time.Now().Unix() > t.lastRequestAt.Unix()+t.cfg.ResurrectAfter {
+		t.cfg.Logger("Resurrect connection")
 		t.resurrectDeads()
 	}
 
 	t.counter++
 
-	if t.discover && t.counter%t.discoverAfter == 0 {
+	if t.cfg.Discover && t.counter%t.cfg.DiscoverAfter == 0 {
+		t.cfg.Logger("Discover clusters by `discoverAfter`: "+
+			"next time after %d requests", t.cfg.DiscoverAfter)
 		t.reloadConns()
 	}
 

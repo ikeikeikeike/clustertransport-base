@@ -4,7 +4,7 @@ import "time"
 
 func newSniffer(cfg *Config, conns *Conns) *Sniffer {
 	s := &Sniffer{
-		cluster: cfg.Cluster,
+		cfg:     cfg,
 		conns:   conns,
 		receive: make(chan *container),
 		exit:    make(chan struct{}),
@@ -18,7 +18,6 @@ func newSniffer(cfg *Config, conns *Conns) *Sniffer {
 // Sniffer is
 type Sniffer struct {
 	cfg     *Config
-	cluster ClusterBase
 	conns   *Conns
 	receive chan *container
 	exit    chan struct{}
@@ -47,7 +46,7 @@ func (s *Sniffer) sniff() {
 		return
 	}
 
-	s.sniffed = s.cluster.Sniff(conn)
+	s.sniffed = s.cfg.Cluster.Sniff(conn)
 }
 
 func (s *Sniffer) run() {

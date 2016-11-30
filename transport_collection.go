@@ -23,7 +23,7 @@ func (cs *Conns) uris() []string {
 func (cs *Conns) alives() []*Conn {
 	var conns []*Conn
 	for _, c := range cs.cc {
-		if c.dead {
+		if c.Dead {
 			continue
 		}
 
@@ -36,7 +36,7 @@ func (cs *Conns) alives() []*Conn {
 func (cs *Conns) deads() []*Conn {
 	var conns []*Conn
 	for _, c := range cs.cc {
-		if !c.dead {
+		if !c.Dead {
 			continue
 		}
 
@@ -67,5 +67,5 @@ func (cs *Conns) conn() (*Conn, error) {
 type connsSort []*Conn
 
 func (f connsSort) Len() int           { return len(f) }
-func (f connsSort) Less(i, j int) bool { return f[i].failures < f[j].failures }
+func (f connsSort) Less(i, j int) bool { return f[i].Failures < f[j].Failures }
 func (f connsSort) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
