@@ -23,6 +23,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 		conn, err := net.Dial("tcp", connection.Uri)
 		if err != nil {
 			errIn <- err
+			return
 		}
 		defer conn.Close()
 		fmt.Fprintf(conn, "config get cluster\r\n\r\n")
@@ -39,9 +40,11 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 		}
 		if err := scanner.Err(); err != nil {
 			errIn <- err
+			return
 		}
 		if len(text) < 3 {
 			errIn <- errors.New("too few a telnet resp")
+			return
 		}
 
 		var uris []string
@@ -55,7 +58,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 		in <- uris
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	for {
