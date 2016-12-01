@@ -36,8 +36,26 @@ type Transport struct {
 	lastRequestAt time.Time
 }
 
+// Func is
+func (t *Transport) Func(fun interface{}) func(interface{}) (interface{}, error) {
+	return func(value interface{}) (interface{}, error) {
+		c := containers.Get()
+		defer containers.Put(c)
+
+		c.fun = fun
+		c.value = value
+		t.request <- c
+
+		b := <-c.baggage
+		defer baggages.Put(b)
+
+		item, err := b.item, b.err
+		return item, err
+	}
+}
+
 // Req is
-func (t *Transport) Req(fun func(conn *Conn) (interface{}, error)) (interface{}, error) {
+func (t *Transport) Req(fun interface{}) (interface{}, error) {
 	c := containers.Get()
 	defer containers.Put(c)
 
@@ -102,8 +120,14 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 	}
 
 	tries++
+	var item interface{}
 
-	item, err := c.fun(conn)
+	switch fun := c.fun.(type) {
+	case func(*Conn) (interface{}, error):
+		item, err = fun(conn)
+	case func(*Conn, interface{}) (interface{}, error):
+		item, err = fun(conn, c.value)
+	}
 
 	if err != nil {
 		switch err.(type) {

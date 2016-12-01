@@ -4,7 +4,8 @@ import "sync"
 
 type container struct {
 	baggage chan *baggage
-	fun     func(conn *Conn) (interface{}, error)
+	value   interface{}
+	fun     interface{}
 }
 
 var defcontainer = &container{
@@ -13,6 +14,8 @@ var defcontainer = &container{
 
 func (c *container) reset() {
 	c.baggage = defcontainer.baggage
+	c.value = defcontainer.value
+	c.fun = defcontainer.fun
 }
 
 type containerPool struct {
@@ -35,7 +38,6 @@ var containers = &containerPool{
 		return &container{baggage: make(chan *baggage)}
 	}},
 }
-
 
 type baggage struct {
 	item interface{}
