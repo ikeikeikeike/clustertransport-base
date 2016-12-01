@@ -149,7 +149,7 @@ Output:
 } nil
 ```
 
-#### Hates the neste
+#### Hates the nested
 
 ...Later
 
@@ -159,7 +159,7 @@ import "github.com/bradfitz/gomemcache/memcache"
 type Storage struct {
 	ts  *ct.Transport
 	get func(interface{}) (interface{}, error)
-	set func(interface{}) (interface{}, error)
+	set func(...interface{}) (interface{}, error)
 }
 
 func (s *Storage) Get(key string) (*memcache.Item, error) {
@@ -167,8 +167,8 @@ func (s *Storage) Get(key string) (*memcache.Item, error) {
 	return item.(*memcache.Item), err
 }
 
-func (s *Storage) Set(item *memcache.Item) error {
-	_, err := s.set(item)
+func (s *Storage) Set(key, value string) error {
+	_, err := s.set(key, value)
 	return err
 }
 
@@ -177,16 +177,18 @@ func NewStorage() *Storage {
 	cfg.Cluster = &ct.ElasticacheCluster{}
 	cfg.Logger = log.Printf
 
-	ts := ct.NewTransport(cfg, "api-host:11211")
+	ts := ct.NewTransport(cfg, "cluster-host:11211")
 
-	get := ts.Func(func(conn *ct.Conn, key interface{}) (interface{}, error) {
+	get := ts.Arg(func(conn *ct.Conn, arg interface{}) (interface{}, error) {
 		client := conn.Client.(*memcache.Client)
-		return client.Get(key.(string))
+		return client.Get(arg.(string))
 	})
 
-	set := ts.Func(func(conn *ct.Conn, item interface{}) (interface{}, error) {
+	set := ts.Args(func(conn *ct.Conn, args ...interface{}) (interface{}, error) {
 		client := conn.Client.(*memcache.Client)
-		return nil, client.Set(item.(*memcache.Item))
+        key, value := args[0], args[1]
+
+		return nil, client.Set(&memcache.Item{Key: key, Value: []byte(value)})
 	})
 
 	return &Storage{ts: ts, get: get, set: set}
@@ -198,10 +200,8 @@ func NewStorage() *Storage {
 ```go
 storage := NewStorage()
 
-item := memcache.Item{Key: "unknownaaaaaaaa", Value: []byte("byte array")}
-storage.Set(&item)
-
-storage.Get("unknownaaaaaaaa")
+storage.Set("egg", "by array")
+storage.Get("egg")
 ```
 
 ## Request retries and dead connections handling
