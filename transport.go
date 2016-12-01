@@ -36,14 +36,32 @@ type Transport struct {
 	lastRequestAt time.Time
 }
 
-// Func is
-func (t *Transport) Func(fun interface{}) func(interface{}) (interface{}, error) {
-	return func(value interface{}) (interface{}, error) {
+// Arg is
+func (t *Transport) Arg(fun interface{}) func(interface{}) (interface{}, error) {
+	return func(arg interface{}) (interface{}, error) {
 		c := containers.Get()
 		defer containers.Put(c)
 
 		c.fun = fun
-		c.value = value
+		c.arg = arg
+		t.request <- c
+
+		b := <-c.baggage
+		defer baggages.Put(b)
+
+		item, err := b.item, b.err
+		return item, err
+	}
+}
+
+// Args is
+func (t *Transport) Args(fun interface{}) func(...interface{}) (interface{}, error) {
+	return func(args ...interface{}) (interface{}, error) {
+		c := containers.Get()
+		defer containers.Put(c)
+
+		c.fun = fun
+		c.arg = args
 		t.request <- c
 
 		b := <-c.baggage
@@ -126,7 +144,9 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 	case func(*Conn) (interface{}, error):
 		item, err = fun(conn)
 	case func(*Conn, interface{}) (interface{}, error):
-		item, err = fun(conn, c.value)
+		item, err = fun(conn, c.arg)
+	case func(*Conn, ...interface{}) (interface{}, error):
+		item, err = fun(conn, c.arg.([]interface{})...)
 	}
 
 	if err != nil {

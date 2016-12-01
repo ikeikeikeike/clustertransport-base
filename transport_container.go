@@ -4,7 +4,7 @@ import "sync"
 
 type container struct {
 	baggage chan *baggage
-	value   interface{}
+	arg     interface{}
 	fun     interface{}
 }
 
@@ -14,7 +14,7 @@ var defcontainer = &container{
 
 func (c *container) reset() {
 	c.baggage = defcontainer.baggage
-	c.value = defcontainer.value
+	c.arg = defcontainer.arg
 	c.fun = defcontainer.fun
 }
 
