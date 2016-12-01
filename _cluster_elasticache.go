@@ -66,13 +66,53 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 		case uris := <-in:
 			return uris
 		case _ = <-errIn:
-			// pp.Println(err)
+			// pretty.Println(err)
 			return []string{}
 		case <-ctx.Done():
-			// pp.Println(ctx.Err().Error())
+			// pretty.Println(ctx.Err().Error())
 			return []string{}
 		}
 	}
+}
+
+// SniffSimple method returns node connection strings.
+func (m *ElasticacheCluster) SniffSimple(connection *Conn) []string {
+	uris := []string{}
+
+	conn, err := net.Dial("tcp", connection.Uri)
+	if err != nil {
+		return uris
+	}
+	defer conn.Close()
+
+	fmt.Fprintf(conn, "config get cluster\r\n\r\n")
+
+	text := []string{}
+	scanner := bufio.NewScanner(conn)
+
+	for scanner.Scan() {
+		t := string(scanner.Text())
+
+		text = append(text, t)
+		if t == "END" {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return uris
+	}
+	if len(text) < 3 {
+		return uris
+	}
+
+	for _, info := range strings.Split(text[2], " ") {
+		i := strings.Split(info, "|")
+		host, _, port := i[0], i[1], i[2]
+
+		uris = append(uris, fmt.Sprintf("%s:%s", host, port))
+	}
+
+	return uris
 }
 
 // Conn method returns one of cluster system connection.

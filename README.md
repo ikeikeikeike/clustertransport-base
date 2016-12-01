@@ -193,8 +193,8 @@ func NewConfig() *Config {
 		Selector:       &RoundRobinSelector{},
 		Logger:         PrintNothing,
 		Discover:       true,
-		DiscoverTick:   1800,   // Discovers nodes per 1800 sec
-		DiscoverAfter:  300000, // Discovers nodes after passed 300,000 times
+		DiscoverTick:   600,    // Discovers nodes per 600 sec
+		DiscoverAfter:  100000, // Discovers nodes after passed 100,000 times
 		RetryOnFailure: false,  // Retrying asap when one of connection failed
 		ResurrectAfter: 5,      // Kicking recovers after disconnected that all of http connection
 		MaxRetries:     5,      // Tries to retry's number for http request
@@ -248,7 +248,7 @@ Output:
 
 ## Request retries and dead connections handling
 
-Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError` error which wraps `syscall.ECONNREFUSED`. Commonly those are wrapped from `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` in explicitly.
+Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError`, `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` in explicitly.
 
 ```go
 item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {

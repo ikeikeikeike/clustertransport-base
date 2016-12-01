@@ -4,7 +4,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"syscall"
 	"time"
 )
 
@@ -61,10 +60,10 @@ func (t *Transport) run() {
 	tick := time.NewTicker(time.Duration(t.cfg.DiscoverTick) * time.Second)
 	defer tick.Stop()
 
-	// For debug
-	// debugTick := time.NewTicker(1 * time.Second)
-	// defer debugTick.Stop()
-	// debugTraceTick := time.NewTicker(30 * time.Second)
+	debugTick := time.NewTicker(5 * time.Second)
+	defer debugTick.Stop()
+
+	// debugTraceTick := time.NewTicker(60 * time.Second)
 	// defer debugTraceTick.Stop()
 
 	for {
@@ -81,23 +80,24 @@ func (t *Transport) run() {
 				t.reloadConns()
 			}
 		// For debug
-		// case <-debugTick.C:
-		// pretty.Println(
-		// "counter:", t.counter,
-		// "alives:", len(t.conns.alives()),
-		// "deads:", len(t.conns.deads()),
-		// )
+		case <-debugTick.C:
+			if t.cfg.Debug {
+				t.cfg.Logger("counter:%d alives:%d deads:%d ",
+					t.counter, len(t.conns.alives()), len(t.conns.deads()))
+			}
 		// case <-debugTraceTick.C:
 		// pretty.Println(t.conns.all())
 		case <-t.exit:
 			break
 		}
+
 	}
 }
 
 func (t *Transport) req(c *container, tries int) (interface{}, error) {
 	conn, err := t.conn()
 	if err != nil {
+		t.cfg.Logger(err.Error())
 		return nil, err
 	}
 
@@ -116,26 +116,10 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 			return item, err
 
 		case *url.Error, *net.OpError, *os.SyscallError, *Econnrefused:
-			syserr := err
-			if uerr, ok := syserr.(*url.Error); ok {
-				syserr = uerr.Err
-			}
-			if oerr, ok := syserr.(*net.OpError); ok {
-				syserr = oerr.Err
-			}
-			if serr, ok := syserr.(*os.SyscallError); ok && serr.Err != syscall.ECONNREFUSED {
-				if tries <= t.cfg.MaxRetries {
-					t.cfg.Logger("Request retries %d/%d", tries, t.cfg.MaxRetries)
-					item, err = t.req(c, tries)
-				}
-
-				return item, err
-			}
-
-			if len(t.conns.alives()) > 1 {
-				t.cfg.Logger("Close connection to cluster via %s", conn.Uri)
-				conn.terminate()
-			}
+			// if len(t.conns.alives()) > 1 {
+			t.cfg.Logger("Close connection to cluster via %s", conn.Uri)
+			conn.terminate()
+			// }
 
 			if t.cfg.RetryOnFailure && tries <= t.cfg.MaxRetries {
 				t.cfg.Logger("Do retryOnFailure %d/%d", tries, t.cfg.MaxRetries)
