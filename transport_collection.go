@@ -3,12 +3,14 @@ package clustertransport
 import (
 	"errors"
 	"sort"
+	"sync"
 )
 
 // Conns is
 type Conns struct {
 	cc       []*Conn
 	selector SelectorBase
+	mu       sync.RWMutex
 }
 
 func (cs *Conns) uris() []string {
@@ -51,6 +53,9 @@ func (cs *Conns) all() []*Conn {
 }
 
 func (cs *Conns) conn() (*Conn, error) {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
 	if len(cs.alives()) <= 0 {
 		deads := cs.deads()
 		if len(deads) <= 0 {
