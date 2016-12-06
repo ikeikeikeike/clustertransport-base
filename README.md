@@ -97,7 +97,7 @@ func NewConfig() *Config {
 		DiscoverTick:   120,    // Discovers nodes per 120 sec
 		DiscoverAfter:  100000, // Discovers nodes after passed 100,000 requests
 		RetryOnFailure: false,  // Retrying asap when one of connection failed
-		ResurrectAfter: 1,      // Kicking recovers after a second when disconnected all of connections
+		ResurrectAfter: 60,     // Resurrect all of connections when Cluster Transport hasn't request to cluster system until it passed 60 sec.
 		MaxRetries:     5,      // Tries to retry's number for http request
 	}
 }
