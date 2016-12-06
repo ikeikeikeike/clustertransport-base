@@ -7,6 +7,7 @@ import (
 
 // Conns is
 type Conns struct {
+	cfg      *Config
 	cc       []*Conn
 	selector SelectorBase
 }
@@ -59,6 +60,9 @@ func (cs *Conns) conn() (*Conn, error) {
 
 		sort.Sort(sort.Reverse(connsSort(deads)))
 		deads[0].alive()
+
+		cs.cfg.Logger("Resurrect a connection via %s (failures:%d deadSince:%v)",
+			deads[0].Uri, deads[0].Failures, deads[0].deadSince)
 	}
 
 	return cs.selector.Select(cs.alives()), nil
@@ -67,5 +71,5 @@ func (cs *Conns) conn() (*Conn, error) {
 type connsSort []*Conn
 
 func (f connsSort) Len() int           { return len(f) }
-func (f connsSort) Less(i, j int) bool { return f[i].Failures < f[j].Failures }
+func (f connsSort) Less(i, j int) bool { return f[i].Failures > f[j].Failures }
 func (f connsSort) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }

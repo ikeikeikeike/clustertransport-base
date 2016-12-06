@@ -30,9 +30,9 @@ type Config struct {
 
 	Discover       bool  // Default: true,
 	DiscoverTick   int   // Default: Discovers nodes per 120 sec
-	DiscoverAfter  int64 // Default: Discovers nodes after passed 10,000 times
+	DiscoverAfter  int64 // Default: Discovers nodes after passed 10,000 requests
 	RetryOnFailure bool  // Default: Retrying asap when one of connection failed
-	ResurrectAfter int64 // Default: Kicking recovers after a second when disconnected all of connections
+	ResurrectAfter int64 // Default: Kicking recovers after 60 seconds when disconnected all of connections
 	MaxRetries     int   // Default: Tries to retry's number for http request
 	Debug          bool
 }
@@ -49,7 +49,7 @@ func NewConfig() *Config {
 		DiscoverTick:   120,
 		DiscoverAfter:  100000,
 		RetryOnFailure: false,
-		ResurrectAfter: 1,
+		ResurrectAfter: 60,
 		MaxRetries:     5,
 	}
 }

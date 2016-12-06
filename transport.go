@@ -207,12 +207,13 @@ func (t *Transport) buildConns(uris []string) *Conns {
 		conns = append(conns, conn)
 	}
 
-	return &Conns{cc: conns, selector: t.cfg.Selector}
+	return &Conns{cfg: t.cfg, cc: conns, selector: t.cfg.Selector}
 }
 
 func (t *Transport) conn() (*Conn, error) {
 	if time.Now().Unix() > t.lastRequestAt.Unix()+t.cfg.ResurrectAfter {
-		t.cfg.Logger("Resurrect connection")
+		t.cfg.Logger("Resurrect all of connections that hasn't request to "+
+			"cluster system until it passed %d sec.", t.cfg.ResurrectAfter)
 		t.resurrectDeads()
 	}
 
