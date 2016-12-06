@@ -3,7 +3,7 @@ package clustertransport
 // ClusterBase interface is
 type ClusterBase interface {
 	Sniff(conn *Conn) []string
-	Conn(uri string, st *Transport) (*Conn, error)
+	Conn(uri string) (*Conn, error)
 }
 
 // SelectorBase is

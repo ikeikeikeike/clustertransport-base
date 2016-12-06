@@ -15,7 +15,7 @@ type Conns struct {
 
 func (cs *Conns) uris() []string {
 	uris := []string{}
-	for _, c := range cs.cc {
+	for _, c := range cs.all() {
 		uris = append(uris, c.Uri)
 	}
 
@@ -24,7 +24,7 @@ func (cs *Conns) uris() []string {
 
 func (cs *Conns) alives() []*Conn {
 	var conns []*Conn
-	for _, c := range cs.cc {
+	for _, c := range cs.all() {
 		if c.Dead {
 			continue
 		}
@@ -37,7 +37,7 @@ func (cs *Conns) alives() []*Conn {
 
 func (cs *Conns) deads() []*Conn {
 	var conns []*Conn
-	for _, c := range cs.cc {
+	for _, c := range cs.all() {
 		if !c.Dead {
 			continue
 		}

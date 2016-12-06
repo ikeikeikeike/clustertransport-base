@@ -37,7 +37,7 @@ func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
 }
 
 // Conn method returns one of cluster system connection.
-func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
+func (m *ElasticsearchCluster) Conn(uri string) (*Conn, error) {
 	var options []elastic.ClientOptionFunc
 	options = append(options, elastic.SetHttpClient(&http.Client{Timeout: 5 * time.Second}))
 	options = append(options, elastic.SetURL(uri))

@@ -116,7 +116,7 @@ func (m *ElasticacheCluster) SniffSimple(connection *Conn) []string {
 }
 
 // Conn method returns one of cluster system connection.
-func (m *ElasticacheCluster) Conn(uri string, st *Transport) (*Conn, error) {
+func (m *ElasticacheCluster) Conn(uri string) (*Conn, error) {
 	conn, err := net.Dial("tcp", uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to launch memcached")

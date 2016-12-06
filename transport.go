@@ -186,7 +186,7 @@ func (t *Transport) buildConns(uris []string) *Conns {
 	var conns []*Conn
 
 	for _, uri := range uris {
-		conn, err := t.cfg.Cluster.Conn(uri, t)
+		conn, err := t.cfg.Cluster.Conn(uri)
 
 		if err != nil {
 			t.cfg.Logger("Failed to connection establishment via %s: %s",
