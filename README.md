@@ -80,8 +80,8 @@ func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 ## Configuration
 
 ```go
-cfg := ct.NewConfig()
-cfg.Cluster = &ct.ElasticsearchCluster{}
+cfg := ctbase.NewConfig()
+cfg.Cluster = &ctbase.ElasticsearchCluster{}
 cfg.Logger = log.Printf
 ...
 ```
@@ -113,22 +113,22 @@ package main
 import (
 	elastic "gopkg.in/olivere/elastic.v3"
 
-	ct "github.com/ikeikeikeike/clustertransport-base"
+	ctbase "github.com/ikeikeikeike/clustertransport-base"
 	"github.com/kr/pretty"
 )
 
-var ts *ct.Transport
+var ts *ctbase.Transport
 
 func init() {
-    cfg := ct.NewConfig()
-    cfg.Cluster = &ct.ElasticsearchCluster{}
+    cfg := ctbase.NewConfig()
+    cfg.Cluster = &ctbase.ElasticsearchCluster{}
     cfg.Logger = log.Printf
 
-	ts = ct.NewTransport(cfg, "http://127.0.0.1:9200")
+	ts = ctbase.NewTransport(cfg, "http://127.0.0.1:9200")
 }
 
 func main() {
-	item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {
+	item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
 		client := conn.Client.(*elastic.Client)
 
 		res, _, err := client.Ping(conn.Uri).Do()
@@ -157,7 +157,7 @@ Output:
 import "github.com/bradfitz/gomemcache/memcache"
 
 type Storage struct {
-	ts  *ct.Transport
+	ts  *ctbase.Transport
 	get func(interface{}) (interface{}, error)
 	set func(...interface{}) (interface{}, error)
 }
@@ -173,18 +173,18 @@ func (s *Storage) Set(key, value string) error {
 }
 
 func NewStorage() *Storage {
-	cfg := ct.NewConfig()
-	cfg.Cluster = &ct.ElasticacheCluster{}
+	cfg := ctbase.NewConfig()
+	cfg.Cluster = &ctbase.ElasticacheCluster{}
 	cfg.Logger = log.Printf
 
-	ts := ct.NewTransport(cfg, "cluster-host:11211")
+	ts := ctbase.NewTransport(cfg, "cluster-host:11211")
 
-	get := ts.Arg(func(conn *ct.Conn, arg interface{}) (interface{}, error) {
+	get := ts.Arg(func(conn *ctbase.Conn, arg interface{}) (interface{}, error) {
 		client := conn.Client.(*memcache.Client)
 		return client.Get(arg.(string))
 	})
 
-	set := ts.Args(func(conn *ct.Conn, args ...interface{}) (interface{}, error) {
+	set := ts.Args(func(conn *ctbase.Conn, args ...interface{}) (interface{}, error) {
 		client := conn.Client.(*memcache.Client)
         key, value := args[0], args[1]
 
@@ -209,12 +209,12 @@ storage.Get("egg")
 Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError`, `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` in explicitly.
 
 ```go
-item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {
+item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
     client := conn.Client.(*memcache.Client)
 
     res, err := client.Get("somekey")
     if err != nil && err == memcached.ErrNoServers {
-        return res, &ct.Econnrefused{"node econnrefused"}
+        return res, &ctbase.Econnrefused{"node econnrefused"}
     }
 
     return res, err
@@ -232,14 +232,14 @@ item, err := ts.Req(func(conn *ct.Conn) (interface{}, error) {
 ## Pluggable logging and tracing
 
 ```go
-cfg := ct.NewConfig()
+cfg := ctbase.NewConfig()
 cfg.Logger = log.Printf
-ts := ct.NewTransport(cfg, "http://127.0.0.1:9200")
+ts := ctbase.NewTransport(cfg, "http://127.0.0.1:9200")
 ```
 
 ```go
-ts := ct.NewTransport(ct.NewConfig(), "http://127.0.0.1:9200")
-ts.Configure(func(cfg *ct.Config) *ct.Config {
+ts := ctbase.NewTransport(ctbase.NewConfig(), "http://127.0.0.1:9200")
+ts.Configure(func(cfg *ctbase.Config) *ctbase.Config {
     cfg.Logger = log.Printf
     return cfg
 })
