@@ -94,7 +94,7 @@ func NewConfig() *Config {
 		Selector:       &RoundRobinSelector{},
 		Logger:         PrintNothing,
 		Discover:       true,
-		DiscoverTick:   600,    // Discovers nodes per 600 sec
+		DiscoverTick:   120,    // Discovers nodes per 120 sec
 		DiscoverAfter:  100000, // Discovers nodes after passed 100,000 requests
 		RetryOnFailure: false,  // Retrying asap when one of connection failed
 		ResurrectAfter: 1,      // Kicking recovers after a second when disconnected all of connections
