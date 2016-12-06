@@ -3,8 +3,6 @@ package clustertransport
 import (
 	"math/rand"
 	"time"
-
-	"github.com/k0kubun/pp"
 )
 
 // RandomSelector is
@@ -23,13 +21,6 @@ type RoundRobinSelector struct {
 
 // Select is
 func (rr *RoundRobinSelector) Select(conns []*Conn) *Conn {
-	defer func() {
-		err := recover()
-		if err != nil {
-			pp.Println(rr.current, len(conns), err, conns)
-		}
-	}()
-
 	if rr.current >= len(conns) {
 		rr.current = 0
 	}

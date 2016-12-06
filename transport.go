@@ -93,11 +93,14 @@ func (t *Transport) Configure(fun func(cfg *Config) *Config) {
 }
 
 func (t *Transport) run() {
-	tick := time.NewTicker(time.Duration(t.cfg.DiscoverTick) * time.Second)
-	defer tick.Stop()
+	dTick := time.NewTicker(time.Duration(t.cfg.DiscoverTick) * time.Second)
+	defer dTick.Stop()
 
-	debugTick := time.NewTicker(5 * time.Second)
-	defer debugTick.Stop()
+	sTick := time.NewTicker(60 * time.Second)
+	defer sTick.Stop()
+
+	tTick := time.NewTicker(5 * time.Second)
+	defer tTick.Stop()
 
 	// debugTraceTick := time.NewTicker(60 * time.Second)
 	// defer debugTraceTick.Stop()
@@ -109,14 +112,16 @@ func (t *Transport) run() {
 			c.baggage <- b
 		case c := <-t.configure:
 			t.cfg = c.fun(t.cfg)
-		case <-tick.C:
+		case <-dTick.C:
 			if t.cfg.Discover {
 				t.cfg.Logger("Discover clusters by `discoverTick`: "+
 					"next time after %d secs", t.cfg.DiscoverTick)
 				t.reloadConns()
 			}
+		case <-sTick.C:
+			t.sniffer.sniff()
 		// For debug
-		case <-debugTick.C:
+		case <-tTick.C:
 			if t.cfg.Debug {
 				t.cfg.Logger("counter:%d alives:%d deads:%d ",
 					t.counter, len(t.conns.alives()), len(t.conns.deads()))

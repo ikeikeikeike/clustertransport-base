@@ -1,7 +1,5 @@
 package clustertransport
 
-import "time"
-
 func newSniffer(cfg *Config, conns *Conns) *Sniffer {
 	s := &Sniffer{
 		cfg:     cfg,
@@ -50,9 +48,6 @@ func (s *Sniffer) sniff() {
 }
 
 func (s *Sniffer) run() {
-	tick := time.NewTicker(60 * time.Second)
-	defer tick.Stop()
-
 	for {
 		select {
 		case c := <-s.receive:
@@ -61,8 +56,6 @@ func (s *Sniffer) run() {
 			}
 			b := baggages.Get(s.sniffed, nil)
 			c.baggage <- b
-		case <-tick.C:
-			s.sniff()
 		case <-s.lost:
 			s.sniffed = make([]string, 0)
 		case <-s.exit:
