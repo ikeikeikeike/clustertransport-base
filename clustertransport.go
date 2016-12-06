@@ -29,8 +29,8 @@ type Config struct {
 	Logger func(format string, params ...interface{})
 
 	Discover       bool  // Default: true,
-	DiscoverTick   int   // Default: Discovers nodes per 600 sec
-	DiscoverAfter  int64 // Default: Discovers nodes after passed 100,000 times
+	DiscoverTick   int   // Default: Discovers nodes per 120 sec
+	DiscoverAfter  int64 // Default: Discovers nodes after passed 10,000 times
 	RetryOnFailure bool  // Default: Retrying asap when one of connection failed
 	ResurrectAfter int64 // Default: Kicking recovers after a second when disconnected all of connections
 	MaxRetries     int   // Default: Tries to retry's number for http request
@@ -46,7 +46,7 @@ func NewConfig() *Config {
 		Selector:       &RoundRobinSelector{},
 		Logger:         PrintNothing,
 		Discover:       true,
-		DiscoverTick:   600,
+		DiscoverTick:   120,
 		DiscoverAfter:  100000,
 		RetryOnFailure: false,
 		ResurrectAfter: 1,
