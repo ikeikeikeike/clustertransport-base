@@ -15,19 +15,20 @@ func TestUnnestedESS(t *testing.T) {
 	cfg.Logger = log.Printf
 	cfg.Debug = true
 
-	ts := NewTransport(cfg, "127.0.0.1:9201")
+	ts := NewTransport(cfg, "http://127.0.0.1:9200")
 
 	get := ts.Args(func(conn *Conn, keys ...interface{}) (interface{}, error) {
 		client := conn.Client.(*elastic.Client)
 		res, _, err := client.Ping(conn.Uri).Do()
+
 		return res, err
 	})
 
 	s := &esStorage{ts: ts, get: get}
 
 	x := 1
-	for 1000000 > x {
-		if _, err := s.Get("unknownaaaaaaaa"); err != nil {
+	for 100000 > x {
+		if _, err := s.Get(); err != nil {
 			assert.NoError(t, err, "Error happened")
 		}
 
@@ -40,7 +41,7 @@ type esStorage struct {
 	get func(...interface{}) (interface{}, error)
 }
 
-func (s *esStorage) Get(key string) (*elastic.PingResult, error) {
-	result, err := s.get(key)
+func (s *esStorage) Get() (*elastic.PingResult, error) {
+	result, err := s.get()
 	return result.(*elastic.PingResult), err
 }
