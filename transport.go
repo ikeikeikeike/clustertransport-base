@@ -11,7 +11,7 @@ import (
 func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
 		cfg:           cfg,
-		request:       make(chan *container),
+		request:       make(chan *container, 100000),
 		configure:     make(chan struct{ fun func(*Config) *Config }),
 		exit:          make(chan struct{}),
 		lastRequestAt: time.Now(),
