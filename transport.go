@@ -17,8 +17,12 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 		lastRequestAt: time.Now(),
 	}
 
-	t.sniffer = newSniffer(cfg, t.buildConns(uris))
-	t.reloadConns()
+	t.conns = t.buildConns(uris)
+	t.sniffer = newSniffer(cfg, t.conns)
+
+	if len(t.conns.alives()) > 0 {
+		t.reloadConns()
+	}
 
 	go t.run()
 	return t
@@ -188,7 +192,7 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 }
 
 func (t *Transport) buildConns(uris []string) *Conns {
-	var conns []*Conn
+	conns := make([]*Conn, 0)
 
 	for _, uri := range uris {
 		conn, err := t.cfg.Cluster.Conn(uri)
@@ -235,7 +239,6 @@ func (t *Transport) resurrectDeads() {
 }
 
 func (t *Transport) rebuildConns(uris []string) {
-
 	// TODO
 	// t.cluster.CloseConns()
 

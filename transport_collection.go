@@ -21,7 +21,7 @@ func (cs *Conns) uris() []string {
 }
 
 func (cs *Conns) alives() []*Conn {
-	var conns []*Conn
+	conns := make([]*Conn, 0)
 	for _, c := range cs.all() {
 		if c.Dead {
 			continue
@@ -34,7 +34,7 @@ func (cs *Conns) alives() []*Conn {
 }
 
 func (cs *Conns) deads() []*Conn {
-	var conns []*Conn
+	conns := make([]*Conn, 0)
 	for _, c := range cs.all() {
 		if !c.Dead {
 			continue
