@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnnested(t *testing.T) {
+func TestUnnestedESC(t *testing.T) {
 	cfg := NewConfig()
 	cfg.Cluster = &ElasticacheCluster{}
 	cfg.Logger = log.Printf
@@ -26,12 +26,12 @@ func TestUnnested(t *testing.T) {
 		return nil, client.Set(items[0].(*memcache.Item))
 	})
 
-	s := &storage{ts: ts, get: get, set: set}
+	s := &escStorage{ts: ts, get: get, set: set}
 
 	item := memcache.Item{Key: "unknownaaaaaaaa", Value: []byte("byte array")}
 
 	x := 1
-	for 100000000 > x {
+	for 1000000 > x {
 		if _, err := s.Get("unknownaaaaaaaa"); err != nil {
 			assert.NoError(t, err, "Error happened")
 		}
@@ -44,18 +44,18 @@ func TestUnnested(t *testing.T) {
 	}
 }
 
-type storage struct {
+type escStorage struct {
 	ts  *Transport
 	get func(...interface{}) (interface{}, error)
 	set func(...interface{}) (interface{}, error)
 }
 
-func (s *storage) Get(key string) (*memcache.Item, error) {
+func (s *escStorage) Get(key string) (*memcache.Item, error) {
 	item, err := s.get(key)
 	return item.(*memcache.Item), err
 }
 
-func (s *storage) Set(item *memcache.Item) error {
+func (s *escStorage) Set(item *memcache.Item) error {
 	_, err := s.set(item)
 	return err
 }
