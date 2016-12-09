@@ -2,7 +2,7 @@ package clustertransport
 
 import (
 	"bufio"
-	"context"
+	"golang.org/x/net/context"
 	"fmt"
 	"net"
 	"strings"

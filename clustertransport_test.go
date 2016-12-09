@@ -2,11 +2,12 @@ package clustertransport
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net"
 	"strings"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/pkg/errors"
