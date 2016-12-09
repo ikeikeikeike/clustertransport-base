@@ -40,7 +40,7 @@ type ElasticsearchCluster struct{}
 
 // Sniff method returns node connection strings.
 func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
-	resp, err := http.Get(conn.Uri + "/_nodes/http")
+	resp, err := http.Get(conn.URI + "/_nodes/http")
 	if err != nil {
 		return []string{}
 	}
@@ -97,7 +97,7 @@ func NewConfig() *Config {
 		DiscoverTick:   120,    // Discovers nodes per 120 sec
 		DiscoverAfter:  100000, // Discovers nodes after passed 100,000 requests
 		RetryOnFailure: false,  // Retrying asap when one of connection failed
-		ResurrectAfter: 60,     // Resurrect all of connections when Cluster Transport hasn't request to cluster system until it passed 60 sec.
+		ResurrectAfter: 30,     // Tries to resurrect some of connections when Cluster Transport hasn't request to cluster system until it passed 30 sec.
 		MaxRetries:     5,      // Tries to retry's number for http request
 	}
 }
@@ -131,7 +131,7 @@ func main() {
 	item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
 		client := conn.Client.(*elastic.Client)
 
-		res, _, err := client.Ping(conn.Uri).Do()
+		res, _, err := client.Ping(conn.URI).Do()
 		return res, err
 	})
 

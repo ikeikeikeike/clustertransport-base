@@ -20,7 +20,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 	in, errIn := make(chan []string), make(chan error)
 
 	go func() {
-		conn, err := net.Dial("tcp", connection.Uri)
+		conn, err := net.Dial("tcp", connection.URI)
 		if err != nil {
 			errIn <- err
 			return
@@ -79,7 +79,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 func (m *ElasticacheCluster) SniffSimple(connection *Conn) []string {
 	uris := []string{}
 
-	conn, err := net.Dial("tcp", connection.Uri)
+	conn, err := net.Dial("tcp", connection.URI)
 	if err != nil {
 		return uris
 	}

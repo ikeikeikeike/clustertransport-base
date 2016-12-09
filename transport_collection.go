@@ -15,7 +15,7 @@ type Conns struct {
 func (cs *Conns) uris() []string {
 	uris := []string{}
 	for _, c := range cs.all() {
-		uris = append(uris, c.Uri)
+		uris = append(uris, c.URI)
 	}
 
 	return uris
@@ -62,7 +62,7 @@ func (cs *Conns) conn() (*Conn, error) {
 		deads[0].alive()
 
 		cs.cfg.Logger("Resurrect a connection via %s (failures:%d deadSince:%v)",
-			deads[0].Uri, deads[0].Failures, deads[0].deadSince)
+			deads[0].URI, deads[0].Failures, deads[0].deadSince)
 	}
 
 	return cs.selector.Select(cs.alives()), nil

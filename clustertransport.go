@@ -32,7 +32,7 @@ type Config struct {
 	DiscoverTick   int   // Default: Discovers nodes per 120 sec
 	DiscoverAfter  int64 // Default: Discovers nodes after passed 10,000 requests
 	RetryOnFailure bool  // Default: Retrying asap when one of connection failed
-	ResurrectAfter int64 // Resurrect all of connections when Cluster Transport hasn't request to cluster system until it passed 60 sec.
+	ResurrectAfter int64 // Default: Tries to resurrect some of connections when Cluster Transport hasn't request to cluster system until it passed 30 sec.
 	MaxRetries     int   // Default: Tries to retry's number for http request
 	Debug          bool
 }
@@ -49,7 +49,7 @@ func NewConfig() *Config {
 		DiscoverTick:   120,
 		DiscoverAfter:  100000,
 		RetryOnFailure: false,
-		ResurrectAfter: 60,
+		ResurrectAfter: 30,
 		MaxRetries:     5,
 	}
 }

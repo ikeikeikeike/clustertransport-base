@@ -170,7 +170,7 @@ func (t *Transport) req(c *container, tries int) (interface{}, error) {
 
 		case *url.Error, *net.OpError, *os.SyscallError, *Econnrefused:
 			// if len(t.conns.alives()) > 1 {
-			t.cfg.Logger("Close connection to cluster via %s", conn.Uri)
+			t.cfg.Logger("Close connection to cluster via %s", conn.URI)
 			conn.terminate()
 			// }
 
@@ -203,7 +203,7 @@ func (t *Transport) buildConns(uris []string) *Conns {
 			continue
 		}
 
-		conn.Uri = uri
+		conn.URI = uri
 		conns = append(conns, conn)
 	}
 
@@ -212,7 +212,7 @@ func (t *Transport) buildConns(uris []string) *Conns {
 
 func (t *Transport) conn() (*Conn, error) {
 	if time.Now().Unix() > t.lastRequestAt.Unix()+t.cfg.ResurrectAfter {
-		t.cfg.Logger("Resurrect all of connections that hasn't request to "+
+		t.cfg.Logger("Resurrect some of connections that hasn't request to "+
 			"cluster system until it passed %d sec.", t.cfg.ResurrectAfter)
 		t.resurrectDeads()
 	}

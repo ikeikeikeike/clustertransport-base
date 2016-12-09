@@ -14,7 +14,7 @@ type ElasticsearchCluster struct{}
 
 // Sniff method returns node connection strings.
 func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
-	resp, err := http.Get(conn.Uri + "/_nodes/http")
+	resp, err := http.Get(conn.URI + "/_nodes/http")
 	if err != nil {
 		return []string{}
 	}

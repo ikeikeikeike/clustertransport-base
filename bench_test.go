@@ -21,7 +21,7 @@ func BenchmarkRace(b *testing.B) {
 		item, err := ts.Req(func(conn *Conn) (interface{}, error) {
 			client := conn.Client.(*elastic.Client)
 
-			res, _, err := client.Ping(conn.Uri).Do()
+			res, _, err := client.Ping(conn.URI).Do()
 			return res, err
 		})
 

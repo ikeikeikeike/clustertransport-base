@@ -19,7 +19,7 @@ func TestUnnestedESS(t *testing.T) {
 
 	get := ts.Args(func(conn *Conn, keys ...interface{}) (interface{}, error) {
 		client := conn.Client.(*elastic.Client)
-		res, _, err := client.Ping(conn.Uri).Do()
+		res, _, err := client.Ping(conn.URI).Do()
 
 		return res, err
 	})
