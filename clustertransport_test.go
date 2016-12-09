@@ -12,11 +12,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ElasticacheCluster implements for ClusterBase interface.
-type ElasticacheCluster struct{}
+type esCluster struct{}
 
-// Sniff method returns node connection strings.
-func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
+func (m *esCluster) Sniff(connection *Conn) []string {
 	in, errIn := make(chan []string), make(chan error)
 
 	go func() {
@@ -34,8 +32,12 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 		for scanner.Scan() {
 			t := string(scanner.Text())
 			text = append(text, t)
+
 			if t == "END" {
 				break
+			}
+			if t == "ERROR" {
+				errIn <- errors.New("Error happend")
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -43,7 +45,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 			return
 		}
 		if len(text) < 3 {
-			errIn <- errors.New("too few a telnet resp")
+			errIn <- errors.New("too few a telnet result")
 			return
 		}
 
@@ -76,7 +78,7 @@ func (m *ElasticacheCluster) Sniff(connection *Conn) []string {
 }
 
 // Conn method returns one of cluster system connection.
-func (m *ElasticacheCluster) Conn(uri string) (*Conn, error) {
+func (m *esCluster) Conn(uri string) (*Conn, error) {
 	conn, err := net.Dial("tcp", uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to launch memcached")

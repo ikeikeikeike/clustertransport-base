@@ -11,7 +11,7 @@ import (
 
 func BenchmarkRace(b *testing.B) {
 	cfg := NewConfig()
-	cfg.Cluster = &ElasticsearchCluster{}
+	cfg.Cluster = &esCluster{}
 	cfg.Logger = log.Printf
 	cfg.Debug = true
 
@@ -47,7 +47,5 @@ func BenchmarkRace(b *testing.B) {
 			funcy(x)
 		}
 		x++
-		// log.Println(x)
-		// time.Sleep(700 * time.Millisecond)
 	}
 }
