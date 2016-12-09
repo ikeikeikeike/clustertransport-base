@@ -10,7 +10,7 @@ type RandomSelector struct{}
 
 // Select is
 func (rs *RandomSelector) Select(conns []*Conn) *Conn {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UTC().UnixNano())
 	return conns[rand.Intn(len(conns))]
 }
 

@@ -75,9 +75,14 @@ func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
 ```
 
 - [Elasticache example](https://github.com/ikeikeikeike/clustertransport-base/blob/master/_cluster_elasticache.go)
+
+### A example for Elasticache
+
 - [Elasticsearch example](https://github.com/ikeikeikeike/clustertransport-base/blob/master/_cluster_elasticsearch.go)
 
 ## Configuration
+
+For customization, Cluster Transport has some of configuration
 
 ```go
 cfg := ctbase.NewConfig()
@@ -105,7 +110,9 @@ func NewConfig() *Config {
 
 ## Usage
 
-...Later
+Below is a very simple usage to work on two ways, `Callback` and `Reduce nesting`.
+
+#### Callback
 
 ```go
 package main
@@ -149,9 +156,9 @@ Output:
 } nil
 ```
 
-#### Hates the nested
+#### Reduce nesting
 
-...Later
+Hates the nested
 
 ```go
 import "github.com/bradfitz/gomemcache/memcache"
@@ -195,7 +202,7 @@ func NewStorage() *Storage {
 }
 ```
 
-...Later
+#### Usage
 
 ```go
 storage := NewStorage()
@@ -206,7 +213,7 @@ storage.Get("egg")
 
 ## Request retries and dead connections handling
 
-Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError`, `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` in explicitly.
+Cluster Transport is able to handle dead connections. Therefore, for handling it returns `*os.SyscallError`, `*url.Error` and `*net.OpError`, or otherwise it's able to return `*clustertransport.Econnrefused` explicitly.
 
 ```go
 item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
@@ -223,11 +230,36 @@ item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
 
 ## Plugabble connection selection strategies (round-robin, random, custom)
 
-...Later
+There's `SelectorBase` interface for custom strategies that plugabble connection selection strategies.
+
+This is a example for ....
+
+```go
+// RandomSelector implements SelectorBase interface
+type MyRandomSelector struct{}
+
+// Select method returns one of connection in random order.
+func (rs *MyRandomSelector) Select(conns []*Conn) *Conn {
+	rand.Seed(time.Now().UTC().UnixNano())
+	return conns[rand.Intn(len(conns))]
+}
+```
+
+And then sets it into configuration.
+
+```go
+cfg := ctbase.NewConfig()
+cfg.Selector = MyRandomSelector
+```
 
 ## Node discovering (based on cluster state) on errors or on demand
 
-...Later
+Default: true
+
+```go
+cfg := ctbase.NewConfig()
+cfg.Discover = true // or false
+```
 
 ## Pluggable logging and tracing
 
