@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-// Conns is
+// Conns handles cluster system connection as collection.
 type Conns struct {
 	cfg      *Config
 	cc       []*Conn

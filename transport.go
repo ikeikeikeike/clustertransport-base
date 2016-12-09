@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// NewTransport is
+// NewTransport returns struct as a pointer.
 func NewTransport(cfg *Config, uris ...string) *Transport {
 	t := &Transport{
 		cfg:           cfg,
@@ -28,7 +28,7 @@ func NewTransport(cfg *Config, uris ...string) *Transport {
 	return t
 }
 
-// Transport struct is
+// Transport struct has public methods which handles all of connections.
 type Transport struct {
 	cfg           *Config
 	conns         *Conns
@@ -40,7 +40,7 @@ type Transport struct {
 	lastRequestAt time.Time
 }
 
-// Arg is
+// Arg returns a function which has a argument, that contains message passing processing.
 func (t *Transport) Arg(fun interface{}) func(interface{}) (interface{}, error) {
 	return func(arg interface{}) (interface{}, error) {
 		c := containers.Get()
@@ -58,7 +58,7 @@ func (t *Transport) Arg(fun interface{}) func(interface{}) (interface{}, error) 
 	}
 }
 
-// Args is
+// Arg returns a function which has a slice argument, that contains message passing processing.
 func (t *Transport) Args(fun interface{}) func(...interface{}) (interface{}, error) {
 	return func(args ...interface{}) (interface{}, error) {
 		c := containers.Get()
@@ -76,7 +76,7 @@ func (t *Transport) Args(fun interface{}) func(...interface{}) (interface{}, err
 	}
 }
 
-// Req is
+// Req is gateway that's proccessing for request to cluster systems.
 func (t *Transport) Req(fun interface{}) (interface{}, error) {
 	c := containers.Get()
 	defer containers.Put(c)
@@ -91,7 +91,7 @@ func (t *Transport) Req(fun interface{}) (interface{}, error) {
 	return item, err
 }
 
-// Configure is
+// Configure configures value into Config field.
 func (t *Transport) Configure(fun func(cfg *Config) *Config) {
 	t.configure <- struct{ fun func(*Config) *Config }{fun: fun}
 }

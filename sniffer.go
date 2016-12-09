@@ -13,7 +13,7 @@ func newSniffer(cfg *Config, conns *Conns) *Sniffer {
 	return s
 }
 
-// Sniffer is
+// Sniffer connects to cluster system for sniffering.
 type Sniffer struct {
 	cfg     *Config
 	conns   *Conns
@@ -23,7 +23,7 @@ type Sniffer struct {
 	sniffed []string
 }
 
-// Sniffed is
+// Sniffed returns sniffed uris.
 func (s *Sniffer) Sniffed() ([]string, error) {
 	c := &container{baggage: make(chan *baggage)}
 
@@ -33,7 +33,7 @@ func (s *Sniffer) Sniffed() ([]string, error) {
 	return b.item.([]string), nil
 }
 
-// Exit is
+// Exit closes goroutine loop.
 func (s *Sniffer) Exit() {
 	s.exit <- struct{}{}
 }

@@ -1,5 +1,11 @@
 
-# Cluster Transport
+# `Cluster Transport`
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build Status](https://travis-ci.org/ikeikeikeike/clustertransport-base.svg?branch=master)](https://travis-ci.org/ikeikeikeike/clustertransport-base)
+[![Go Report Card](https://goreportcard.com/badge/ikeikeikeike/clustertransport-base)](https://goreportcard.com/report/github.com/ikeikeikeike/clustertransport-base)
+[![GoDoc](https://godoc.org/github.com/ikeikeikeike/clustertransport-base?status.svg)](https://godoc.org/github.com/ikeikeikeike/clustertransport-base)
+
 ### Message passing based client(transport) on cluster systems.
 
 It handles connecting to multiple nodes in the cluster which there's management interface.

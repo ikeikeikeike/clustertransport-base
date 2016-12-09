@@ -1,22 +1,22 @@
 package clustertransport
 
-// ClusterBase interface is
+// ClusterBase has interfaces which connects Cluster System.
 type ClusterBase interface {
 	Sniff(conn *Conn) []string
 	Conn(uri string) (*Conn, error)
 }
 
-// SelectorBase is
+// SelectorBase has a interface which selects cluster connections.
 type SelectorBase interface {
 	Select(conns []*Conn) *Conn
 }
 
-// Econnrefused is
+// Econnrefused notices dead connection to Cluseter Transport.
 type Econnrefused struct {
 	s string
 }
 
-// Error is
+// Error returns Econnrefused's error message.
 func (e *Econnrefused) Error() string {
 	return e.s
 }
@@ -37,10 +37,10 @@ type Config struct {
 	Debug          bool
 }
 
-// PrintNothing is
+// PrintNothing does nothing.
 func PrintNothing(format string, v ...interface{}) {}
 
-// NewConfig is
+// NewConfig returns a Config struct which has some of field for handling Cluster Transport.
 func NewConfig() *Config {
 	return &Config{
 		Selector:       &RoundRobinSelector{},

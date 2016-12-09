@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Conn struct is
+// Conn handles one of cluster system connection.
 type Conn struct {
 	Client    interface{}
 	URI       string
