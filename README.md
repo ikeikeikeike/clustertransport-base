@@ -252,9 +252,18 @@ cfg := ctbase.NewConfig()
 cfg.Selector = MyRandomSelector
 ```
 
+Or in dinamically.
+
+```go
+ts.Configure(func(cfg *ctbase.Config) *ctbase.Config {
+    cfg.Selector = MyRandomSelector
+    return cfg
+})
+```
+
 ## Node discovering (based on cluster state) on errors or on demand
 
-Default: true
+Default: `true`
 
 ```go
 cfg := ctbase.NewConfig()
@@ -262,6 +271,8 @@ cfg.Discover = true // or false
 ```
 
 ## Pluggable logging and tracing
+
+Config has `Logger` field..
 
 ```go
 cfg := ctbase.NewConfig()
@@ -276,3 +287,5 @@ ts.Configure(func(cfg *ctbase.Config) *ctbase.Config {
     return cfg
 })
 ```
+
+<!-- ## Relational packages -->
