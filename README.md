@@ -33,12 +33,12 @@ A example that's connecting Elasticsearch instead of elastic client's sniffer.
 package mypkg
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
 
-	elastic "gopkg.in/olivere/elastic.v3"
+    elastic "gopkg.in/olivere/elastic.v3"
 )
 
 // ElasticsearchCluster implements for ClusterBase interface.
@@ -46,37 +46,37 @@ type ElasticsearchCluster struct{}
 
 // Sniff method returns node connection strings.
 func (m *ElasticsearchCluster) Sniff(conn *Conn) []string {
-	resp, err := http.Get(conn.URI + "/_nodes/http")
-	if err != nil {
-		return []string{}
-	}
-	defer resp.Body.Close()
+    resp, err := http.Get(conn.URI + "/_nodes/http")
+    if err != nil {
+        return []string{}
+    }
+    defer resp.Body.Close()
 
-	var uris []string
-	var info *elastic.NodesInfoResponse
+    var uris []string
+    var info *elastic.NodesInfoResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
-		if len(info.Nodes) > 0 {
-			for _, node := range info.Nodes {
-				if node.HTTPAddress != "" {
-					uris = append(uris, fmt.Sprintf("http://%s", node.HTTPAddress))
-				}
-			}
-		}
-	}
+    if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
+        if len(info.Nodes) > 0 {
+            for _, node := range info.Nodes {
+                if node.HTTPAddress != "" {
+                    uris = append(uris, fmt.Sprintf("http://%s", node.HTTPAddress))
+                }
+            }
+        }
+    }
 
-	return uris
+    return uris
 }
 
 // Conn method returns one of cluster system connection.
 func (m *ElasticsearchCluster) Conn(uri string, st *Transport) (*Conn, error) {
-	var options []elastic.ClientOptionFunc
-	options = append(options, elastic.SetHttpClient(&http.Client{Timeout: 5 * time.Second}))
-	options = append(options, elastic.SetURL(uri))
-	options = append(options, elastic.SetSniff(false))
+    var options []elastic.ClientOptionFunc
+    options = append(options, elastic.SetHttpClient(&http.Client{Timeout: 5 * time.Second}))
+    options = append(options, elastic.SetURL(uri))
+    options = append(options, elastic.SetSniff(false))
 
-	client, err := elastic.NewClient(options...)
-	return &Conn{Client: client}, err
+    client, err := elastic.NewClient(options...)
+    return &Conn{Client: client}, err
 }
 ```
 
@@ -101,16 +101,16 @@ cfg.Logger = log.Printf
 
 ```go
 func NewConfig() *Config {
-	return &Config{
-		Selector:       &RoundRobinSelector{},
-		Logger:         PrintNothing,
-		Discover:       true,
-		DiscoverTick:   120,    // Discovers nodes per 120 sec
-		DiscoverAfter:  100000, // Discovers nodes after passed 100,000 requests
-		RetryOnFailure: false,  // Retrying asap when one of connection failed
-		ResurrectAfter: 30,     // Tries to resurrect some of connections when Cluster Transport hasn't request to cluster system until it passed 30 sec.
-		MaxRetries:     5,      // Tries to retry's number for http request
-	}
+    return &Config{
+        Selector:       &RoundRobinSelector{},
+        Logger:         PrintNothing,
+        Discover:       true,
+        DiscoverTick:   120,    // Discovers nodes per 120 sec
+        DiscoverAfter:  100000, // Discovers nodes after passed 100,000 requests
+        RetryOnFailure: false,  // Retrying asap when one of connection failed
+        ResurrectAfter: 30,     // Tries to resurrect some of connections when Cluster Transport hasn't request to cluster system until it passed 30 sec.
+        MaxRetries:     5,      // Tries to retry's number for http request
+    }
 }
 ```
 
@@ -124,10 +124,10 @@ Below is a very simple usage to work on two ways, `Callback` and `Reduce nesting
 package main
 
 import (
-	elastic "gopkg.in/olivere/elastic.v3"
+    elastic "gopkg.in/olivere/elastic.v3"
 
-	ctbase "github.com/ikeikeikeike/clustertransport-base"
-	"github.com/kr/pretty"
+    ctbase "github.com/ikeikeikeike/clustertransport-base"
+    "github.com/kr/pretty"
 )
 
 var ts *ctbase.Transport
@@ -137,18 +137,18 @@ func init() {
     cfg.Cluster = &ctbase.ElasticsearchCluster{}
     cfg.Logger = log.Printf
 
-	ts = ctbase.NewTransport(cfg, "http://127.0.0.1:9200")
+    ts = ctbase.NewTransport(cfg, "http://127.0.0.1:9200")
 }
 
 func main() {
-	item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
-		client := conn.Client.(*elastic.Client)
+    item, err := ts.Req(func(conn *ctbase.Conn) (interface{}, error) {
+        client := conn.Client.(*elastic.Client)
 
-		res, _, err := client.Ping(conn.URI).Do()
-		return res, err
-	})
+        res, _, err := client.Ping(conn.URI).Do()
+        return res, err
+    })
 
-	pretty.Println(item.(*elastic.PingResult), err)
+    pretty.Println(item.(*elastic.PingResult), err)
 }
 ```
 Output:
@@ -170,41 +170,41 @@ Hates the nested
 import "github.com/bradfitz/gomemcache/memcache"
 
 type Storage struct {
-	ts  *ctbase.Transport
-	get func(interface{}) (interface{}, error)
-	set func(...interface{}) (interface{}, error)
+    ts  *ctbase.Transport
+    get func(interface{}) (interface{}, error)
+    set func(...interface{}) (interface{}, error)
 }
 
 func (s *Storage) Get(key string) (*memcache.Item, error) {
-	item, err := s.get(key)
-	return item.(*memcache.Item), err
+    item, err := s.get(key)
+    return item.(*memcache.Item), err
 }
 
 func (s *Storage) Set(key, value string) error {
-	_, err := s.set(key, value)
-	return err
+    _, err := s.set(key, value)
+    return err
 }
 
 func NewStorage() *Storage {
-	cfg := ctbase.NewConfig()
-	cfg.Cluster = &ctbase.ElasticacheCluster{}
-	cfg.Logger = log.Printf
+    cfg := ctbase.NewConfig()
+    cfg.Cluster = &ctbase.ElasticacheCluster{}
+    cfg.Logger = log.Printf
 
-	ts := ctbase.NewTransport(cfg, "cluster-host:11211")
+    ts := ctbase.NewTransport(cfg, "cluster-host:11211")
 
-	get := ts.Arg(func(conn *ctbase.Conn, arg interface{}) (interface{}, error) {
-		client := conn.Client.(*memcache.Client)
-		return client.Get(arg.(string))
-	})
+    get := ts.Arg(func(conn *ctbase.Conn, arg interface{}) (interface{}, error) {
+        client := conn.Client.(*memcache.Client)
+        return client.Get(arg.(string))
+    })
 
-	set := ts.Args(func(conn *ctbase.Conn, args ...interface{}) (interface{}, error) {
-		client := conn.Client.(*memcache.Client)
+    set := ts.Args(func(conn *ctbase.Conn, args ...interface{}) (interface{}, error) {
+        client := conn.Client.(*memcache.Client)
         key, value := args[0], args[1]
 
-		return nil, client.Set(&memcache.Item{Key: key, Value: []byte(value)})
-	})
+        return nil, client.Set(&memcache.Item{Key: key, Value: []byte(value)})
+    })
 
-	return &Storage{ts: ts, get: get, set: set}
+    return &Storage{ts: ts, get: get, set: set}
 }
 ```
 
@@ -246,8 +246,8 @@ type MyRandomSelector struct{}
 
 // Select method returns one of connection in random order.
 func (rs *MyRandomSelector) Select(conns []*Conn) *Conn {
-	rand.Seed(time.Now().UTC().UnixNano())
-	return conns[rand.Intn(len(conns))]
+    rand.Seed(time.Now().UTC().UnixNano())
+    return conns[rand.Intn(len(conns))]
 }
 ```
 
